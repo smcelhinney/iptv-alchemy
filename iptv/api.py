@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Flask REST API for IPTV Processor
+Flask REST API for iptv-alchemy
 
 Exposes processor operations as async REST endpoints. Each POST creates an
 in-memory task, runs the work in a background thread, and returns a task ID
@@ -29,7 +29,7 @@ import requests as http_requests
 load_dotenv()
 
 MEILISEARCH_HOST = os.getenv('MEILISEARCH_HOST', 'http://iptv-meilisearch:7700')
-MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_API_KEY', 'iptv-processor-default-key')
+MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_API_KEY', 'iptv-alchemy-default-key')
 MEILISEARCH_INDEX = 'iptv_content'
 
 
@@ -196,7 +196,7 @@ def _trigger_emby_guide_refresh():
 
 
 def _run_task(task_id, task_type):
-    """Execute an IPTV processor operation in a background thread."""
+    """Execute a processor operation in a background thread."""
     with tasks_lock:
         tasks[task_id]['status'] = 'running'
         tasks[task_id]['started_at'] = datetime.now(timezone.utc).isoformat()
@@ -212,9 +212,9 @@ def _run_task(task_id, task_type):
 
     try:
         # Lazy import so Flask can start even if Meilisearch is down
-        from .main import IPTVProcessor
+        from .main import AlchemyProcessor
 
-        processor = IPTVProcessor()
+        processor = AlchemyProcessor()
 
         if task_type == 'download':
             skip = tasks[task_id].get('options', {}).get('skip_if_present', False)
@@ -246,7 +246,7 @@ def _run_task(task_id, task_type):
             _trigger_emby_guide_refresh()
 
     except SystemExit as e:
-        # IPTVProcessor calls sys.exit(1) on config/credential errors
+        # AlchemyProcessor calls sys.exit(1) on config/credential errors
         logs = _clean_logs(captured.getvalue())
 
         with tasks_lock:

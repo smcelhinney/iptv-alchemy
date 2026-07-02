@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-IPTV Processing Script
+iptv-alchemy processor
 Downloads M3U playlist and XMLTV EPG from Xtream API, filters by categories, and generates output files.
 """
 
@@ -25,8 +25,8 @@ from .redis_client import refresh_category_cache
 from .config_db import get_selected_categories
 
 
-class IPTVProcessor:
-    """Main IPTV processing orchestrator"""
+class AlchemyProcessor:
+    """Main processing orchestrator"""
 
     def __init__(self):
         self._load_configuration()
@@ -209,7 +209,7 @@ class IPTVProcessor:
         try:
             # Read Meilisearch config
             meilisearch_host = os.getenv('MEILISEARCH_HOST', 'http://iptv-meilisearch:7700')
-            meilisearch_api_key = os.getenv('MEILISEARCH_API_KEY', 'iptv-processor-default-key')
+            meilisearch_api_key = os.getenv('MEILISEARCH_API_KEY', 'iptv-alchemy-default-key')
 
             # Parse M3U to get channel mapping
             channel_map = self.m3u_parser.get_channel_map('iptv.m3u')
@@ -404,7 +404,7 @@ if __name__ == "__main__":
     load_dotenv()
 
     # Parse CLI arguments
-    parser = argparse.ArgumentParser(description='IPTV Processor - Download and process IPTV playlists')
+    parser = argparse.ArgumentParser(description='iptv-alchemy - Download and process IPTV playlists')
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument('--download-only', action='store_true', help='Only download iptv.m3u and iptv.xml')
     mode_group.add_argument('--process-only', action='store_true', help='Only process existing files (skip download)')
@@ -414,7 +414,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Create processor
-    processor = IPTVProcessor()
+    processor = AlchemyProcessor()
 
     # Print start delimiter
     start_time = datetime.now()

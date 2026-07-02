@@ -178,7 +178,7 @@ class XMLTVParser:
 
             # Create new root with filtered content
             new_root = etree.Element("tv")
-            new_root.set("generator-info-name", "iptv-processor")
+            new_root.set("generator-info-name", "iptv-alchemy")
 
             # Add filtered channels and programmes
             for channel in channels_to_keep:

@@ -143,7 +143,7 @@ export default function OutputDirectoriesSection({
               <div>
                 <h3 className="text-sm font-semibold text-white mb-2">Local to the IPTV Container</h3>
                 <p className="text-sm text-gray-300">
-                  These directory paths are <span className="text-blue-400 font-medium">inside the IPTV Processor container</span>. They are not paths on your host machine or in your media server container.
+                  These directory paths are <span className="text-blue-400 font-medium">inside the iptv-alchemy container</span>. They are not paths on your host machine or in your media server container.
                 </p>
               </div>
 
@@ -159,8 +159,8 @@ export default function OutputDirectoriesSection({
                 <pre className="bg-gray-950 border border-gray-700 rounded-lg p-4 text-xs text-gray-300 overflow-x-auto">
 {`version: '3.8'
 services:
-  iptv-processor:
-    image: your-iptv-processor:latest
+  iptv-alchemy:
+    image: your-iptv-alchemy:latest
     volumes:
       - ./output:/app/output
     # ... other config

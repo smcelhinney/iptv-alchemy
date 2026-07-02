@@ -18,7 +18,7 @@ services:
     env_file: .env
     environment:
       - MEILI_ENV=${MEILI_ENV:-development}
-      - MEILI_MASTER_KEY=${MEILISEARCH_KEY:-iptv-processor-default-key}
+      - MEILI_MASTER_KEY=${MEILISEARCH_KEY:-iptv-alchemy-default-key}
     ports:
       - "${MEILISEARCH_PORT:-7700}:7700"
     volumes:
@@ -56,7 +56,7 @@ services:
     container_name: iptv-api
     env_file: .env
     environment:
-      - MEILISEARCH_API_KEY=${MEILISEARCH_KEY:-iptv-processor-default-key}
+      - MEILISEARCH_API_KEY=${MEILISEARCH_KEY:-iptv-alchemy-default-key}
       - REDIS_URL=redis://iptv-redis:6379/0
     volumes:
       - ./output:/app/output

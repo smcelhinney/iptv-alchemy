@@ -63,7 +63,7 @@ def _api_headers() -> dict:
         "Api-Key": key,
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "User-Agent": "iptv-processor v1.0",
+        "User-Agent": "iptv-alchemy v1.0",
     }
 
 
@@ -214,7 +214,7 @@ def search_subtitles(imdb_id: str, season: int | None = None, episode: int | Non
     headers = {
         "Api-Key": api_key,
         "Accept": "application/json",
-        "User-Agent": "iptv-processor v1.0",
+        "User-Agent": "iptv-alchemy v1.0",
     }
     try:
         url = f"{OPENSUBTITLES_BASE}/subtitles"

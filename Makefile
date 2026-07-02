@@ -5,7 +5,7 @@ all: run
 
 help:
 	@echo "Available targets:"
-	@echo "  run              - Setup venv (if needed) and run the IPTV processor (download + process)"
+	@echo "  run              - Setup venv (if needed) and run iptv-alchemy (download + process)"
 	@echo "  download         - Setup venv (if needed) and only download iptv.m3u and iptv.xml"
 	@echo "  process          - Setup venv (if needed) and only process existing files"
 	@echo "  reindex          - Setup venv (if needed) and re-populate Meilisearch content index"

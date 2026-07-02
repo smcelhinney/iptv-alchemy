@@ -39,12 +39,16 @@
       will-change: transform, opacity;
     }
 
-    .carousel-slide img {
+    .carousel-slide img,
+    .carousel-slide video {
       width: 100%;
       height: 100%;
       object-fit: cover;
       border-radius: 1.25rem;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    .carousel-slide video::-webkit-media-controls {
+      display: none !important;
     }
 
     .carousel-slide .fallback {
@@ -60,15 +64,10 @@
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
     }
 
-    .carousel-slide .label {
-      position: absolute;
-      bottom: -3.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
+    .carousel-label {
       text-align: center;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.3s ease;
+      min-height: 4.5rem;
     }
 
     .carousel-arrow {
@@ -156,6 +155,12 @@
         <!-- slides injected by JS -->
       </div>
 
+      <!-- Label -->
+      <div class="carousel-label mt-8 px-4" id="label">
+        <h3 class="text-lg font-medium text-white" id="label-title"></h3>
+        <p class="text-sm text-gray-400 mt-1 max-w-xl mx-auto" id="label-desc"></p>
+      </div>
+
       <!-- Arrows -->
       <button class="carousel-arrow left-4 lg:left-0 -translate-x-1/2" id="prevBtn" aria-label="Previous">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -169,7 +174,79 @@
       </button>
 
       <!-- Dots -->
-      <div class="flex items-center justify-center gap-2 mt-16" id="dots"></div>
+      <div class="flex items-center justify-center gap-2 mt-6" id="dots"></div>
+    </div>
+  </section>
+
+  <!-- Main Features -->
+  <section class="max-w-6xl mx-auto px-6 pb-24">
+    <h2 class="text-3xl font-semibold text-white text-center mb-12">Main features.</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <!-- Card 1 -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-white mb-2">Xtream Codes support</h3>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Connect to any Xtream Codes provider to download M3U/XMLTV feeds, extract categories, and generate filtered output ready for indexing and playback.
+        </p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-white mb-2">TMDB integration</h3>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Enrich movies and series with posters, synopses, cast, and ratings from The Movie Database for a polished, metadata-rich library experience.
+        </p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-white mb-2">Subtitle support with OpenSubtitles</h3>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Search and download subtitles directly from the player UI, then adjust offset and size on the fly with client-side VTT rewriting and CSS ::cue styling.
+        </p>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-white mb-2">Self-hosted for security</h3>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Run the full Docker Compose stack — Meilisearch, Redis, Flask API, and React UI — on your own infrastructure so your viewing data stays private.
+        </p>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 hover:border-gray-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-white mb-2">Media Server support</h3>
+        <p class="text-sm text-gray-400 leading-relaxed">
+          Generate .strm files and filtered M3U/XML output for Emby and Jellyfin, turning your IPTV sources into a managed media library.
+        </p>
+      </div>
     </div>
   </section>
 
@@ -190,24 +267,39 @@
   <script>
     const SLIDES = [
       {
-        img: 'screenshots/search.png',
-        title: 'Search &amp; Browse',
-        desc: 'Full-text search across live TV, movies, and series with instant results and faceted filtering.',
-      },
-      {
-        img: 'screenshots/player.png',
-        title: 'Stream Player',
-        desc: 'Built-in video player with subtitle support, adjustable offset, and playback memory.',
-      },
-      {
-        img: 'screenshots/settings.png',
-        title: 'Settings Drawer',
-        desc: 'Per-viewer preferences for subtitle size, offset, and subtitle on/off toggle.',
+        img: 'screenshots/home.png',
+        title: 'Home & Browse',
+        desc: 'Search live TV, movies, series, and EPG listings from a clean, type-ahead home view.',
       },
       {
         img: 'screenshots/library.png',
         title: 'Personal Library',
-        desc: 'Save and organise your favourite channels, movies, and series in one place.',
+        desc: 'Save favorites and build a curated collection of channels, movies, and series.',
+      },
+      {
+        img: 'screenshots/library-single-movie.png',
+        title: 'Movie Details',
+        desc: 'Rich TMDB metadata, posters, synopses, and one-click streaming for any movie.',
+      },
+      {
+        img: 'screenshots/library-single-show.png',
+        title: 'Show Details',
+        desc: 'Season and episode breakdowns with quick access to stream any episode.',
+      },
+      {
+        img: 'screenshots/subtitle-config.png',
+        title: 'Subtitle Settings',
+        desc: 'Fine-tune subtitle size and offset with per-viewer preferences stored in Redis.',
+      },
+      {
+        img: 'screenshots/floating-player-subtitles.png',
+        title: 'Stream Player',
+        desc: 'Built-in player with OpenSubtitles integration, VTT offset, and playback memory.',
+      },
+      {
+        img: 'screenshots/admin-menu.mov',
+        title: 'Admin Menu',
+        desc: 'Server-wide configuration, task runner, and output directory management.',
       },
     ]
 
@@ -219,6 +311,9 @@
     const dotsEl = document.getElementById('dots')
     const prevBtn = document.getElementById('prevBtn')
     const nextBtn = document.getElementById('nextBtn')
+    const labelTitle = document.getElementById('label-title')
+    const labelDesc = document.getElementById('label-desc')
+    const labelEl = document.getElementById('label')
 
     // --- Normalise circular offset ---
     function offsetOf(index) {
@@ -230,16 +325,32 @@
 
     // --- Build static slides DOM ---
     const slideEls = []
+    const videoEls = []
+    const isVideo = (src) => /\.(mov|mp4|webm|mkv)$/i.test(src)
+
     SLIDES.forEach((s, i) => {
       const div = document.createElement('div')
       div.className = 'carousel-slide'
       div.dataset.index = i
 
-      const img = document.createElement('img')
-      img.src = s.img
-      img.alt = s.title
-      img.draggable = false
-      img.onerror = function () {
+      const media = isVideo(s.img)
+        ? document.createElement('video')
+        : document.createElement('img')
+
+      if (media.tagName === 'VIDEO') {
+        media.src = s.img
+        media.muted = true
+        media.loop = true
+        media.playsInline = true
+        media.setAttribute('aria-label', s.title)
+        videoEls[i] = media
+      } else {
+        media.src = s.img
+        media.alt = s.title
+        media.draggable = false
+      }
+
+      media.onerror = function () {
         this.style.display = 'none'
         const fb = document.createElement('div')
         fb.className = 'fallback'
@@ -247,15 +358,7 @@
         div.insertBefore(fb, this.nextSibling)
       }
 
-      const label = document.createElement('div')
-      label.className = 'label'
-      label.innerHTML = `
-        <h3 class="text-lg font-medium text-white">${s.title}</h3>
-        <p class="text-sm text-gray-400 mt-1">${s.desc}</p>
-      `
-
-      div.appendChild(img)
-      div.appendChild(label)
+      div.appendChild(media)
       carousel.appendChild(div)
       slideEls.push(div)
 
@@ -269,6 +372,17 @@
 
     const dots = dotsEl.querySelectorAll('.carousel-dot')
 
+    // --- Update external label ---
+    function updateLabel() {
+      const s = SLIDES[current]
+      labelEl.style.opacity = '0'
+      setTimeout(() => {
+        labelTitle.textContent = s.title
+        labelDesc.textContent = s.desc
+        labelEl.style.opacity = '1'
+      }, 150)
+    }
+
     // --- Apply transforms ---
     function updateSlides() {
       slideEls.forEach((el, i) => {
@@ -277,24 +391,35 @@
 
         el.style.transitionDuration = isAnimating ? '0.5s' : '0s'
         el.style.pointerEvents = off === 0 ? 'auto' : 'none'
+        el.style.zIndex = off === 0 ? '1' : '-1'
 
         if (abs > 1) {
           const dir = off > 0 ? 1 : -1
           el.style.transform = `translateX(-50%) translateX(${dir * 600}px) scale(0.5)`
           el.style.opacity = '0'
         } else if (off === -1) {
-          el.style.transform = 'translateX(-50%) translateX(-280px) scale(0.75)'
-          el.style.opacity = '0.45'
+          el.style.transform = 'translateX(-50%) translateX(-280px) scale(0.6)'
+          el.style.opacity = '0.4'
         } else if (off === 0) {
           el.style.transform = 'translateX(-50%) scale(1)'
           el.style.opacity = '1'
         } else if (off === 1) {
-          el.style.transform = 'translateX(-50%) translateX(280px) scale(0.75)'
-          el.style.opacity = '0.45'
+          el.style.transform = 'translateX(-50%) translateX(280px) scale(0.6)'
+          el.style.opacity = '0.4'
+        }
+
+        const video = videoEls[i]
+        if (video) {
+          if (off === 0) {
+            video.play().catch(() => {})
+          } else {
+            video.pause()
+          }
         }
       })
 
       dots.forEach((d, i) => d.classList.toggle('active', i === current))
+      updateLabel()
     }
 
     // --- Navigation ---

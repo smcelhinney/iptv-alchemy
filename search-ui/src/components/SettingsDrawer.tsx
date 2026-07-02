@@ -70,6 +70,27 @@ export default function SettingsDrawer({ open, onClose }: Props) {
 
         <div className="p-5 space-y-6">
           <div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-300">Subtitles</h3>
+              <button
+                onClick={() => setSetting('subtitle_enabled', settings.subtitle_enabled === 'true' ? 'false' : 'true')}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  settings.subtitle_enabled === 'true' ? 'bg-blue-600' : 'bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    settings.subtitle_enabled === 'true' ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <span className="text-xs text-gray-500 mt-1 block">
+              {settings.subtitle_enabled === 'true' ? 'On' : 'Off'}
+            </span>
+          </div>
+
+          <div>
             <h3 className="text-sm font-medium text-gray-300 mb-3">Subtitle Size</h3>
             <div className="flex gap-2">
               {SIZE_OPTIONS.map((opt) => {

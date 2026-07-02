@@ -209,7 +209,8 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
     }
 
     trackRef.current.src = blobUrlRef.current
-  }, [vttText, settings.subtitle_offset])
+    trackRef.current.track.mode = settings.subtitle_enabled === 'false' ? 'disabled' : 'showing'
+  }, [vttText, settings.subtitle_offset, settings.subtitle_enabled])
 
   // Cleanup on unmount
   useEffect(() => {

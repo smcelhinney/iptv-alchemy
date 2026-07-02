@@ -1,6 +1,7 @@
 import { apiClient } from './client'
 
 export interface UserSettings {
+  subtitle_enabled?: string
   subtitle_size?: string
   subtitle_offset?: string
 }

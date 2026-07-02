@@ -12,6 +12,7 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue | null>(null)
 
 const _DEFAULTS: UserSettings = {
+  subtitle_enabled: 'true',
   subtitle_size: 'normal',
   subtitle_offset: '0',
 }

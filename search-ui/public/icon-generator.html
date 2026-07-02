@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate App Icons</title>
+    <style>
+        body { font-family: system-ui; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .icon-preview { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+        .icon-preview div { text-align: center; }
+        .icon-preview canvas { border: 1px solid #ccc; }
+        button { background: #2563EB; color: white; border: none; padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 6px; margin: 5px; }
+        button:hover { background: #1d4ed8; }
+        .download-all { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>IPTV App Icon Generator</h1>
+    <p>Click the buttons below to download each icon size, or click "Download All Icons" to get a ZIP file.</p>
+
+    <div class="icon-preview" id="preview"></div>
+
+    <button onclick="downloadAll()" class="download-all">Download All Icons as ZIP</button>
+
+    <script>
+        const sizes = [
+            { name: 'apple-touch-icon-152.png', size: 152 },
+            { name: 'apple-touch-icon-167.png', size: 167 },
+            { name: 'apple-touch-icon-180.png', size: 180 },
+            { name: 'icon-192.png', size: 192 },
+            { name: 'icon-512.png', size: 512 },
+            { name: 'favicon-32.png', size: 32 },
+        ];
+
+        function drawIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background rounded rect
+            const radius = size * 0.1875; // ~96px for 512px icon
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, radius);
+            ctx.fillStyle = '#2563EB';
+            ctx.fill();
+
+            // Inner rounded rect (TV screen shape)
+            const innerMargin = size * 0.1875;
+            const innerSize = size * 0.625;
+            const innerRadius = size * 0.0625;
+            ctx.beginPath();
+            ctx.roundRect(innerMargin, innerMargin, innerSize, innerSize, innerRadius);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = size * 0.0625;
+            ctx.stroke();
+
+            // Vertical line (left side of grid)
+            const lineX = innerMargin + innerSize * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(lineX, innerMargin);
+            ctx.lineTo(lineX, innerMargin + innerSize);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = size * 0.0625;
+            ctx.stroke();
+
+            // Horizontal lines
+            const lineY1 = innerMargin + innerSize * 0.35;
+            const lineY2 = innerMargin + innerSize * 0.65;
+
+            ctx.beginPath();
+            ctx.moveTo(innerMargin, lineY1);
+            ctx.lineTo(lineX, lineY1);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(innerMargin, lineY2);
+            ctx.lineTo(lineX, lineY2);
+            ctx.stroke();
+
+            return canvas;
+        }
+
+        function downloadIcon(name, size) {
+            const canvas = drawIcon(size);
+            const link = document.createElement('a');
+            link.download = name;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadAll() {
+            sizes.forEach(({ name, size }) => {
+                setTimeout(() => downloadIcon(name, size), 100);
+            });
+        }
+
+        // Generate previews
+        const preview = document.getElementById('preview');
+        sizes.forEach(({ name, size }) => {
+            const div = document.createElement('div');
+            const canvas = drawIcon(size);
+            canvas.style.width = '100px';
+            canvas.style.height = '100px';
+            const btn = document.createElement('button');
+            btn.textContent = `Download ${name}`;
+            btn.onclick = () => downloadIcon(name, size);
+            div.appendChild(canvas);
+            div.appendChild(document.createElement('br'));
+            div.appendChild(btn);
+            preview.appendChild(div);
+        });
+    </script>
+</body>
+</html>

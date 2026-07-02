@@ -1,0 +1,82 @@
+# IPTV Processor - example docker-compose
+#
+# Copy this file to docker-compose.override.yml (or edit in place) and adjust
+# the host paths under the `iptv-api` volumes to point at your own media
+# library. All configurable values use environment variables with sensible
+# defaults; create a `.env` file (see `.env.example`) to override them.
+#
+# Reverse proxy: the API and UI join an external Docker network (named in
+# PROXY_NETWORK below, defaults to "proxy") so that Caddy/Traefik/Nginx can
+# route traffic to them. Create the network before starting the stack:
+#   docker network create proxy
+# Then set PROXY_NETWORK in .env to match your reverse proxy's network.
+
+services:
+  iptv-meilisearch:
+    image: getmeili/meilisearch:v1.12
+    container_name: iptv-meilisearch
+    env_file: .env
+    environment:
+      - MEILI_ENV=${MEILI_ENV:-development}
+      - MEILI_MASTER_KEY=${MEILISEARCH_KEY:-iptv-processor-default-key}
+    ports:
+      - "${MEILISEARCH_PORT:-7700}:7700"
+    volumes:
+      - ./meilisearch_data:/meili_data
+    restart: unless-stopped
+
+  iptv-redis:
+    image: redis:7-alpine
+    container_name: iptv-redis
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - ./redis_data:/data
+    restart: unless-stopped
+
+  iptv-search-ui:
+    build:
+      context: ./search-ui
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE=/api
+    container_name: iptv-search-ui
+    env_file: .env
+    depends_on:
+      - iptv-api
+    restart: unless-stopped
+    networks:
+      - default
+      - proxy
+
+  iptv-api:
+    build:
+      context: ./iptv
+      dockerfile: Dockerfile
+    container_name: iptv-api
+    env_file: .env
+    environment:
+      - MEILISEARCH_API_KEY=${MEILISEARCH_KEY:-iptv-processor-default-key}
+      - REDIS_URL=redis://iptv-redis:6379/0
+    volumes:
+      - ./output:/app/output
+      - ./data:/app/data
+      # Optional: mount your existing media library so generated .strm files
+      # land where Emby/Jellyfin can pick them up. Override these in your
+      # .env file (MOVIES_DIR, TV_DIR, PRIVATE_DIR).
+      - ${MOVIES_DIR:-./media/movies}:/external/movies
+      - ${TV_DIR:-./media/tv}:/external/tv
+      - ${PRIVATE_DIR:-./media/private}:/external/private
+    depends_on:
+      - iptv-meilisearch
+      - iptv-redis
+    restart: unless-stopped
+    networks:
+      - default
+      - proxy
+
+networks:
+  default:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-proxy}

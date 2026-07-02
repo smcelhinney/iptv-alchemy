@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Generated output
+output/
+
+# Local caches
+*_cache.txt
+.etags.json
+
+# Persistent service data (do not commit)
+meilisearch_data/
+redis_data/
+data/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Per-project agent/tool config
+mempalace.yaml
+entities.json
+CLAUDE.md
+.claude/

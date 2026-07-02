@@ -1,0 +1,43 @@
+{
+  "name": "iptv-search-ui",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:check": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@iwsdk/core": "^0.4.2",
+    "@meilisearch/instant-meilisearch": "^1.0.0",
+    "@pmndrs/uikit-horizon": "^1.0.74",
+    "@tanstack/react-query": "^5.99.0",
+    "axios": "^1.15.0",
+    "instantsearch.js": "^4.62.0",
+    "mpegts.js": "^1.8.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.7.0",
+    "react-instantsearch": "^7.11.2",
+    "react-player": "^3.4.0",
+    "react-router-dom": "^7.14.1",
+    "three": "^0.184.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/chromecast-caf-sender": "^1.0.11",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "@types/three": "^0.184.1",
+    "@types/webxr": "^0.5.24",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.19",
+    "esbuild": "^0.25.0",
+    "postcss": "^8.4.38",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5",
+    "vite": "^6.4.2"
+  }
+}

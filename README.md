@@ -1,9 +1,9 @@
-# IPTV Processor
+# iptv-alchemy
 
-> **Status: beta (v0.0.2)** — this is an early pre-release. Expect rough edges
+> **Status: beta (v0.0.1)** — this is an early pre-release. Expect rough edges
 > and breaking changes before 1.0. Bug reports and PRs are welcome!
 
-IPTV Processor downloads M3U playlists and XMLTV EPG data from an
+iptv-alchemy downloads M3U playlists and XMLTV EPG data from an
 [Xtream Codes](https://xtream-ui.org/) compatible provider, filters channels
 by category, builds a searchable catalog of live TV / movies / series, and can
 generate `.strm` files so media servers (Emby, Jellyfin) can index and play
@@ -56,8 +56,8 @@ useful — you need a server URL, username and password from your provider.
 1. **Clone the repo**
 
    ```bash
-   git clone https://github.com/smcelhinney/iptv-processor.git
-   cd iptv-processor
+   git clone https://github.com/smcelhinney/iptv-alchemy.git
+   cd iptv-alchemy
    ```
 
 2. **Create your `.env` file**
@@ -72,7 +72,7 @@ useful — you need a server URL, username and password from your provider.
    XTREAM_SERVER_URL=http://your-provider.example.com
    XTREAM_USERNAME=your_username
    XTREAM_PASSWORD=your_password
-   MEILISEARCH_KEY=iptv-processor-default-key
+   MEILISEARCH_KEY=iptv-alchemy-default-key
    ```
 
    See `.env.example` for all supported variables (TMDB, OpenSubtitles,

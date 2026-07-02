@@ -1,4 +1,4 @@
-# IPTV Processor - example docker-compose
+# iptv-alchemy - docker-compose
 #
 # Copy this file to docker-compose.override.yml (or edit in place) and adjust
 # the host paths under the `iptv-api` volumes to point at your own media

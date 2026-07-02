@@ -59,7 +59,7 @@ export default function OnboardingPage() {
     <div className="flex-1 flex flex-col items-center overflow-y-auto px-4 py-8">
       <div className="w-full max-w-2xl my-auto">
         {/* Title */}
-        <h1 className="text-2xl font-bold text-center mb-8">Welcome to IPTV Processor</h1>
+        <h1 className="text-2xl font-bold text-center mb-8">Welcome to iptv-alchemy</h1>
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">

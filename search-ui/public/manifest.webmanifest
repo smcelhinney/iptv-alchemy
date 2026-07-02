@@ -1,6 +1,6 @@
 {
-  "name": "IPTV Search",
-  "short_name": "IPTV",
+  "name": "iptv-alchemy",
+  "short_name": "alchemy",
   "description": "Search and browse IPTV content",
   "theme_color": "#2563EB",
   "background_color": "#111827",

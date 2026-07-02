@@ -41,24 +41,18 @@ export default function Header() {
         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
           <svg
             className="w-4 h-4"
-            fill="none"
             viewBox="0 0 24 24"
+            fill="none"
             stroke="#FFFFFF"
             strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3.75 6A2.25 2.25 0 016 3.75h12A2.25 2.25 0 0120.25 6v12A2.25 2.25 0 0118 20.25H6A2.25 2.25 0 013.75 18V6z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9.75 3.75v16.5M3.75 9.75h6M3.75 14.25h6"
-            />
+            <path d="M9 3h6" />
+            <path d="M10 3v5l-4 11a2 2 0 002 2h8a2 2 0 002-2l-4-11V3" />
           </svg>
         </div>
-        <span className="text-lg font-bold">IPTV</span>
+        <span className="text-lg font-bold">iptv-alchemy</span>
       </NavLink>
       <nav className="flex items-center gap-1">
         <NavLink

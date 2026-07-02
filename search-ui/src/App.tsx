@@ -2,11 +2,16 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, lazy, Suspense } from "react";
 import Header from "./features/shared/components/Header";
-import HomePage from "./pages/HomePage";
+import LibraryLayout from "./pages/LibraryLayout";
+import TvChannelsPage from "./pages/TvChannelsPage";
+import MoviesLayout from "./pages/MoviesLayout";
+import MoviesGrid from "./pages/MoviesGrid";
+import ShowsPage from "./pages/ShowsPage";
 import SearchPage from "./pages/SearchPage";
 import AdminPage from "./pages/AdminPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import ShowDetailPage from "./pages/ShowDetailPage";
+import CollectionsPage from "./pages/CollectionsPage";
 
 import OnboardingPage from "./pages/OnboardingPage";
 import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext";
@@ -138,8 +143,14 @@ function AppShell() {
             </Suspense>
           } />
           {/* Library routes */}
-          <Route path="/library" element={<Navigate to="/library/tv-channels" replace />} />
-          <Route path="/library/:tab" element={<HomePage />} />
+          <Route path="/library" element={<LibraryLayout />}>
+            <Route path="tv-channels" element={<TvChannelsPage />} />
+            <Route path="movies" element={<MoviesLayout />}>
+              <Route index element={<MoviesGrid />} />
+              <Route path="collections" element={<CollectionsPage />} />
+            </Route>
+            <Route path="tv-shows" element={<ShowsPage />} />
+          </Route>
           <Route path="/library/movies/:id" element={<MovieDetailPage />} />
           <Route path="/library/tv-shows/:id" element={<ShowDetailPage />} />
           <Route path="/library/tv-shows/:id/season/:seasonNum" element={<ShowDetailPage />} />

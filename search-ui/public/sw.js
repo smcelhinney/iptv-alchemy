@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iptv-shell-v1'
+const CACHE_NAME = 'iptv-shell-v2'
 const API_CACHE = 'iptv-api-v1'
 
 // Static assets to precache
@@ -33,6 +33,9 @@ self.addEventListener('fetch', (event) => {
 
   // Never cache stream proxy requests
   if (url.pathname.startsWith('/proxy/')) return
+
+  // Playback memory saves: let them pass through without caching
+  if (url.pathname === '/api/playback/memory' && request.method === 'PUT') return
 
   // API requests: NetworkFirst with cache fallback
   if (url.pathname.startsWith('/api/')) {
@@ -71,5 +74,17 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request).catch(() => caches.match('/index.html'))
     )
+  }
+})
+
+// Handle playback progress saves off the main thread
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SAVE_PLAYBACK') {
+    const { id, currentTime, duration } = event.data
+    fetch('/api/playback/memory', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, currentTime, duration }),
+    }).catch(() => {})
   }
 })

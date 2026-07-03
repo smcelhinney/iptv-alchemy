@@ -447,6 +447,43 @@ export default function MovieDetailPage() {
                   </div>
                 )}
 
+                {/* Crew */}
+                {tmdbData.crew && tmdbData.crew.length > 0 && (
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-300 mb-2">Crew</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      {[...tmdbData.crew]
+                        .sort((a, b) => {
+                          const priority = (job: string) =>
+                            job === 'Director' ? 0 :
+                            job === 'Producer' ? 1 : 2
+                          return priority(a.job) - priority(b.job)
+                        })
+                        .slice(0, 40)
+                        .map((member, i) => (
+                          <div key={`${member.id}-${i}`} className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg">
+                            {member.profile_url ? (
+                              <img
+                                src={member.profile_url}
+                                alt={member.name}
+                                className="w-9 h-9 rounded-full object-cover flex-shrink-0 bg-gray-700"
+                                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-gray-500 text-sm font-bold flex-shrink-0">
+                                {member.name.charAt(0)}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs text-white font-medium truncate">{member.name}</p>
+                              <p className="text-[11px] text-gray-400 truncate">{member.job}</p>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Studios */}
                 {tmdbData.production_companies && tmdbData.production_companies.length > 0 && (
                   <div>

@@ -46,6 +46,11 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
   const { settings } = useSettings()
   const styleId = useId()
 
+  // Live TV: route through backend transcoding proxy (HEVC/AC3 → H.264/AAC)
+  const streamUrl = contentType === 'live'
+    ? `${window.location.origin}/api/proxy/live-tv?url=${encodeURIComponent(url)}`
+    : url
+
   const sizeMap: Record<string, string> = {
     small: '80%',
     normal: '100%',
@@ -111,17 +116,20 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
       const player = mpegts.createPlayer(
         {
           type: 'mpegts',
-          url,
+          url: streamUrl,
           isLive: true,
           cors: true,
         },
         {
           enableWorker: true,
-          enableStashBuffer: false,
+          enableStashBuffer: true,
+          stashInitialSize: 1024 * 1024,  // 1MB initial buffer before playback
           autoCleanupSourceBuffer: true,
-          autoCleanupMaxBackwardDuration: 120,
-          autoCleanupMinBackwardDuration: 60,
-          liveBufferLatencyChasing: false,
+          autoCleanupMaxBackwardDuration: 30,
+          autoCleanupMinBackwardDuration: 10,
+          liveBufferLatencyChasing: true,
+          liveBufferLatencyMaxLatency: 15,  // catch up if >15s behind live edge
+          liveBufferLatencyMinRemain: 5,    // keep at least 5s when chasing
           liveBufferLatencyChasingOnPaused: false,
         },
       )
@@ -166,7 +174,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
         playerRef.current = null
       }
     }
-  }, [url, contentType])
+  }, [streamUrl, contentType])
 
   // Fetch raw VTT text when subtitleUrl changes
   useEffect(() => {

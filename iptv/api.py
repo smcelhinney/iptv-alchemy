@@ -11,6 +11,7 @@ import os
 import logging
 import re
 import shutil
+import subprocess
 import sys
 import uuid
 import threading
@@ -21,7 +22,7 @@ from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import requests as http_requests
 
@@ -431,6 +432,101 @@ def api_search_result(doc_id):
     except http_requests.RequestException as e:
         logger.error("search-result request failed: %s", e)
         return jsonify({'error': f'Document lookup failed: {e}'}), 502
+
+
+# ---------------------------------------------------------------------------
+# Live TV transcoding proxy
+# ---------------------------------------------------------------------------
+
+@app.route('/api/proxy/live-tv', methods=['GET', 'OPTIONS'])
+def api_proxy_live_tv():
+    """Transcode a live TV stream to H.264 + AAC for browser playback.
+
+    Accepts the source stream URL as a query parameter, then pipes it through
+    ffmpeg to remux/transcode into MPEG-TS with codecs that browsers can play
+    via MediaSource Extensions (mpegts.js).
+    """
+    if request.method == 'OPTIONS':
+        return Response()
+
+    source_url = request.args.get('url')
+    if not source_url:
+        return jsonify({'error': 'Missing url query parameter'}), 400
+
+    logger.info("proxy live-tv starting transcode: %s", source_url)
+
+    # Launch ffmpeg to transcode
+    ffmpeg_args = [
+        'ffmpeg',
+        '-hide_banner',
+        '-loglevel', 'warning',
+        '-user_agent', 'VLC/3.0.20 LibVLC/3.0.20',
+        '-i', source_url,
+        '-vf', 'scale=1280:-2',
+        '-r', '60',
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-tune', 'zerolatency',
+        '-profile:v', 'high',
+        '-pix_fmt', 'yuv420p',
+        '-crf', '20',
+        '-maxrate', '5000k',
+        '-bufsize', '10000k',
+        '-g', '60',          # keyframe every 60 frames (1s at 60fps)
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-ac', '2',          # stereo (downmix from 5.1)
+        '-f', 'mpegts',
+        'pipe:1',
+    ]
+    logger.info("proxy live-tv ffmpeg: %s", ' '.join(ffmpeg_args))
+
+    try:
+        proc = subprocess.Popen(
+            ffmpeg_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except FileNotFoundError:
+        logger.error("proxy live-tv: ffmpeg not found on PATH")
+        return jsonify({'error': 'ffmpeg not installed on server'}), 500
+    except Exception as e:
+        logger.error("proxy live-tv: failed to start ffmpeg: %s", e)
+        return jsonify({'error': 'Failed to start transcoder'}), 500
+
+    # Stream ffmpeg stdout to the client
+    def generate():
+        try:
+            while True:
+                chunk = proc.stdout.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            logger.info("proxy live-tv client disconnected: %s", source_url)
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+            # Only log stderr if ffmpeg exited with an error (non-zero return code)
+            if proc.returncode is not None and proc.returncode < 0:
+                stderr_output = proc.stderr.read().decode('utf-8', errors='replace').strip()
+                if stderr_output:
+                    logger.warning("proxy live-tv ffmpeg stderr:\n%s", stderr_output[-2000:])
+            else:
+                proc.stderr.read()  # drain pipe
+
+    return Response(
+        generate(),
+        status=200,
+        headers={
+            'Content-Type': 'video/mp2t',
+            'Cache-Control': 'no-cache, no-store',
+            'Connection': 'keep-alive',
+        },
+    )
 
 
 # --- Emby integration endpoints ---

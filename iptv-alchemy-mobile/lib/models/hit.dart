@@ -7,7 +7,7 @@ part 'hit.freezed.dart';
 part 'hit.g.dart';
 
 @freezed
-class Hit with _$Hit {
+abstract class Hit with _$Hit {
   const factory Hit({
     required String id,
     String? name,

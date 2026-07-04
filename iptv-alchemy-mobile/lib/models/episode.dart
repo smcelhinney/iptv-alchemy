@@ -4,7 +4,7 @@ part 'episode.freezed.dart';
 part 'episode.g.dart';
 
 @freezed
-class Episode with _$Episode {
+abstract class Episode with _$Episode {
   const factory Episode({
     required String id,
     required String name,

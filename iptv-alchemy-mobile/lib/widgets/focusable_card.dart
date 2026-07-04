@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class FocusableCard extends StatefulWidget {
   final Widget child;
@@ -49,7 +50,7 @@ class _FocusableCardState extends State<FocusableCard> {
           duration: const Duration(milliseconds: 150),
           padding: widget.padding,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             borderRadius: widget.borderRadius,
             border: Border.all(
               color: _focused

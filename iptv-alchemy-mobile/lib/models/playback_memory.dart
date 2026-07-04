@@ -4,7 +4,7 @@ part 'playback_memory.freezed.dart';
 part 'playback_memory.g.dart';
 
 @freezed
-class PlaybackMemory with _$PlaybackMemory {
+abstract class PlaybackMemory with _$PlaybackMemory {
   const factory PlaybackMemory({
     @JsonKey(name: 'position') required double positionSeconds,
     @JsonKey(name: 'duration') required double durationSeconds,

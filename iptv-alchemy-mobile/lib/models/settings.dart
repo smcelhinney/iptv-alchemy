@@ -4,7 +4,7 @@ part 'settings.freezed.dart';
 part 'settings.g.dart';
 
 @freezed
-class Settings with _$Settings {
+abstract class Settings with _$Settings {
   const factory Settings({
     @JsonKey(name: 'subtitle_size') @Default('normal') String subtitleSize,
     @JsonKey(name: 'subtitle_offset') @Default('0ms') String subtitleOffset,

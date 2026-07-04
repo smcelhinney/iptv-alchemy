@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'config/server_config.dart';
 import 'navigation/app_router.dart';
 import 'providers/server_config_provider.dart';
 

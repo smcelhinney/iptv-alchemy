@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/api_client.dart';
 import '../data/library_repository.dart';
 import '../models/library.dart';
 import 'api_client_provider.dart';

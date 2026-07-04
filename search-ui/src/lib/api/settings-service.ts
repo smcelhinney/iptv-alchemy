@@ -4,6 +4,7 @@ export interface UserSettings {
   subtitle_enabled?: string
   subtitle_size?: string
   subtitle_offset?: string
+  transcode_enabled?: string
 }
 
 export async function fetchSettings(): Promise<UserSettings> {

@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import time
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -106,3 +107,169 @@ def get_all_added_times() -> dict[str, str]:
     except Exception as e:
         logger.warning("Failed to read added times: %s", e)
         return {}
+
+
+# ---------------------------------------------------------------------------
+# Collections
+# ---------------------------------------------------------------------------
+
+_COLLECTIONS_KEY = "library:collections"          # HASH: col_id -> JSON {name, type}
+_COLLECTION_PREFIX = "library:collection:"         # SET: doc IDs
+
+
+def _col_key(col_id: str) -> str:
+    return f"{_COLLECTION_PREFIX}{col_id}"
+
+
+def _parse_collection(col_id: str, raw: str) -> dict:
+    """Parse a collection hash value. Legacy plain names default to 'movies'."""
+    if raw.startswith("{"):
+        try:
+            data = json.loads(raw)
+        except Exception:
+            data = {}
+        return {
+            "id": col_id,
+            "name": data.get("name", raw),
+            "type": data.get("type", "movies"),
+        }
+    return {"id": col_id, "name": raw, "type": "movies"}
+
+
+def get_collections(type: str | None = None) -> list[dict]:
+    """Return collections with item counts, optionally filtered by type."""
+    client = _get_redis_client()
+    if client is None:
+        return []
+    try:
+        raw = client.hgetall(_COLLECTIONS_KEY)
+        result = []
+        for col_id, value in raw.items():
+            col = _parse_collection(col_id, value)
+            if type and col.get("type") != type:
+                continue
+            col["count"] = client.scard(_col_key(col_id))
+            result.append(col)
+        result.sort(key=lambda c: c["name"].lower())
+        return result
+    except Exception as e:
+        logger.warning("Failed to read collections: %s", e)
+        return []
+
+
+def get_collection(col_id: str) -> dict | None:
+    """Return a single collection with id, name, and type."""
+    client = _get_redis_client()
+    if client is None:
+        return None
+    try:
+        raw = client.hget(_COLLECTIONS_KEY, col_id)
+        if not raw:
+            return None
+        return _parse_collection(col_id, raw)
+    except Exception as e:
+        logger.warning("Failed to read collection: %s", e)
+        return None
+
+
+def create_collection(name: str, type: str = "movies") -> dict | None:
+    """Create a new collection. Returns {id, name, type} or None on failure."""
+    client = _get_redis_client()
+    if client is None:
+        return None
+    try:
+        col_id = uuid.uuid4().hex[:8]
+        value = json.dumps({"name": name, "type": type})
+        client.hset(_COLLECTIONS_KEY, col_id, value)
+        return {"id": col_id, "name": name, "type": type}
+    except Exception as e:
+        logger.warning("Failed to create collection: %s", e)
+        return None
+
+
+def delete_collection(col_id: str) -> bool:
+    """Delete a collection and its items."""
+    client = _get_redis_client()
+    if client is None:
+        return False
+    try:
+        client.hdel(_COLLECTIONS_KEY, col_id)
+        client.delete(_col_key(col_id))
+        return True
+    except Exception as e:
+        logger.warning("Failed to delete collection: %s", e)
+        return False
+
+
+def rename_collection(col_id: str, name: str) -> bool:
+    """Rename a collection while preserving its type."""
+    client = _get_redis_client()
+    if client is None:
+        return False
+    try:
+        col = get_collection(col_id)
+        if col is None:
+            return False
+        value = json.dumps({"name": name, "type": col.get("type", "movies")})
+        client.hset(_COLLECTIONS_KEY, col_id, value)
+        return True
+    except Exception as e:
+        logger.warning("Failed to rename collection: %s", e)
+        return False
+
+
+def add_to_collection(col_id: str, doc_id: str) -> bool:
+    """Add a document ID to a collection."""
+    client = _get_redis_client()
+    if client is None:
+        return False
+    try:
+        if not client.hexists(_COLLECTIONS_KEY, col_id):
+            return False
+        client.sadd(_col_key(col_id), doc_id)
+        return True
+    except Exception as e:
+        logger.warning("Failed to add to collection: %s", e)
+        return False
+
+
+def remove_from_collection(col_id: str, doc_id: str) -> bool:
+    """Remove a document ID from a collection."""
+    client = _get_redis_client()
+    if client is None:
+        return False
+    try:
+        client.srem(_col_key(col_id), doc_id)
+        return True
+    except Exception as e:
+        logger.warning("Failed to remove from collection: %s", e)
+        return False
+
+
+def get_collection_items(col_id: str) -> list[str]:
+    """Return all document IDs in a collection."""
+    client = _get_redis_client()
+    if client is None:
+        return []
+    try:
+        return list(client.smembers(_col_key(col_id)))
+    except Exception as e:
+        logger.warning("Failed to read collection items: %s", e)
+        return []
+
+
+def get_doc_collections(doc_id: str) -> list[str]:
+    """Return IDs of collections that contain a given document."""
+    client = _get_redis_client()
+    if client is None:
+        return []
+    try:
+        raw = client.hgetall(_COLLECTIONS_KEY)
+        result = []
+        for col_id in raw:
+            if client.sismember(_col_key(col_id), doc_id):
+                result.append(col_id)
+        return result
+    except Exception as e:
+        logger.warning("Failed to check doc collections: %s", e)
+        return []

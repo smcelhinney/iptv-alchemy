@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
@@ -18,6 +18,9 @@ export interface MoviesContext {
 
 export default function MoviesLayout() {
   const [sort, setSort] = useState<MovieSort>('alpha')
+  const location = useLocation()
+  const onCollections = location.pathname.includes('/collections')
+  const basePath = '/library/movies'
   const { data: library } = useLibrary()
   const ids = library?.movies ?? []
   const removeFromLib = useRemoveFromLibrary()
@@ -71,9 +74,9 @@ export default function MoviesLayout() {
     <>
       <LibrarySidebar>
         <SortSection>
-          <SortButton active={sort === 'alpha'} onClick={() => setSort('alpha')} label="Alphabetically" />
-          <SortButton active={sort === 'added'} onClick={() => setSort('added')} label="Date Added" />
-          <SortButton active={sort === 'recent'} onClick={() => setSort('recent')} label="Recently Played" />
+          <SortButton to={basePath} active={!onCollections && sort === 'alpha'} onClick={() => setSort('alpha')} label="Alphabetically" />
+          <SortButton to={basePath} active={!onCollections && sort === 'added'} onClick={() => setSort('added')} label="Date Added" />
+          <SortButton to={basePath} active={!onCollections && sort === 'recent'} onClick={() => setSort('recent')} label="Recently Played" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink
@@ -100,11 +103,13 @@ export default function MoviesLayout() {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="text-center py-16">
-      <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-      </svg>
-      <p className="text-gray-400">{message}</p>
+    <div className="flex-1 flex items-center justify-center p-6">
+      <div className="text-center">
+        <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+        </svg>
+        <p className="text-gray-400">{message}</p>
+      </div>
     </div>
   )
 }

@@ -410,23 +410,29 @@ def api_multi_search():
         return jsonify({'error': f'Multi-search request failed: {e}'}), 502
 
 
+def _get_meilisearch_document(doc_id: str):
+    """Fetch a single document from the Meilisearch index."""
+    url = f"{MEILISEARCH_HOST}/indexes/{MEILISEARCH_INDEX}/documents/{doc_id}"
+    logger.info("search-result -> %s", url)
+    resp = http_requests.get(
+        url,
+        headers={'Authorization': f'Bearer {MEILISEARCH_API_KEY}'},
+        timeout=10,
+    )
+    if resp.status_code >= 400:
+        logger.warning(
+            "search-result upstream error: status=%s body=%s",
+            resp.status_code,
+            resp.text[:500],
+        )
+    return resp
+
+
 @app.route('/api/search/result/<path:doc_id>', methods=['GET'])
 def api_search_result(doc_id):
     """Proxy single document lookup to Meilisearch."""
-    url = f"{MEILISEARCH_HOST}/indexes/{MEILISEARCH_INDEX}/documents/{doc_id}"
-    logger.info("search-result -> %s", url)
     try:
-        resp = http_requests.get(
-            url,
-            headers={'Authorization': f'Bearer {MEILISEARCH_API_KEY}'},
-            timeout=10,
-        )
-        if resp.status_code >= 400:
-            logger.warning(
-                "search-result upstream error: status=%s body=%s",
-                resp.status_code,
-                resp.text[:500],
-            )
+        resp = _get_meilisearch_document(doc_id)
         return (resp.content, resp.status_code,
                 {'Content-Type': resp.headers.get('Content-Type', 'application/json')})
     except http_requests.RequestException as e:
@@ -435,27 +441,23 @@ def api_search_result(doc_id):
 
 
 # ---------------------------------------------------------------------------
-# Live TV transcoding proxy
+# Stream proxy (transcode + passthrough)
 # ---------------------------------------------------------------------------
 
-@app.route('/api/proxy/live-tv', methods=['GET', 'OPTIONS'])
-def api_proxy_live_tv():
-    """Transcode a live TV stream to H.264 + AAC for browser playback.
+PROXY_CHUNK_SIZE = 65536
 
-    Accepts the source stream URL as a query parameter, then pipes it through
-    ffmpeg to remux/transcode into MPEG-TS with codecs that browsers can play
-    via MediaSource Extensions (mpegts.js).
-    """
-    if request.method == 'OPTIONS':
-        return Response()
 
-    source_url = request.args.get('url')
-    if not source_url:
-        return jsonify({'error': 'Missing url query parameter'}), 400
+def _should_transcode(source_url, settings):
+    """Decide whether to transcode based on settings and URL type."""
+    if settings.get('transcode_enabled', 'true') != 'true':
+        return False
+    return source_url.lower().endswith('.ts')
 
-    logger.info("proxy live-tv starting transcode: %s", source_url)
 
-    # Launch ffmpeg to transcode
+def _proxy_transcode(source_url):
+    """Transcode a live TV stream via ffmpeg to H.264 + AAC MPEG-TS."""
+    logger.info("proxy stream transcode: %s", source_url)
+
     ffmpeg_args = [
         'ffmpeg',
         '-hide_banner',
@@ -472,14 +474,13 @@ def api_proxy_live_tv():
         '-crf', '20',
         '-maxrate', '5000k',
         '-bufsize', '10000k',
-        '-g', '60',          # keyframe every 60 frames (1s at 60fps)
+        '-g', '60',
         '-c:a', 'aac',
         '-b:a', '128k',
-        '-ac', '2',          # stereo (downmix from 5.1)
+        '-ac', '2',
         '-f', 'mpegts',
         'pipe:1',
     ]
-    logger.info("proxy live-tv ffmpeg: %s", ' '.join(ffmpeg_args))
 
     try:
         proc = subprocess.Popen(
@@ -488,35 +489,33 @@ def api_proxy_live_tv():
             stderr=subprocess.PIPE,
         )
     except FileNotFoundError:
-        logger.error("proxy live-tv: ffmpeg not found on PATH")
+        logger.error("proxy stream: ffmpeg not found on PATH")
         return jsonify({'error': 'ffmpeg not installed on server'}), 500
     except Exception as e:
-        logger.error("proxy live-tv: failed to start ffmpeg: %s", e)
+        logger.error("proxy stream: failed to start ffmpeg: %s", e)
         return jsonify({'error': 'Failed to start transcoder'}), 500
 
-    # Stream ffmpeg stdout to the client
     def generate():
         try:
             while True:
-                chunk = proc.stdout.read(65536)
+                chunk = proc.stdout.read(PROXY_CHUNK_SIZE)
                 if not chunk:
                     break
                 yield chunk
         finally:
-            logger.info("proxy live-tv client disconnected: %s", source_url)
+            logger.info("proxy stream transcode disconnected: %s", source_url)
             proc.terminate()
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
-            # Only log stderr if ffmpeg exited with an error (non-zero return code)
             if proc.returncode is not None and proc.returncode < 0:
                 stderr_output = proc.stderr.read().decode('utf-8', errors='replace').strip()
                 if stderr_output:
-                    logger.warning("proxy live-tv ffmpeg stderr:\n%s", stderr_output[-2000:])
+                    logger.warning("proxy stream ffmpeg stderr:\n%s", stderr_output[-2000:])
             else:
-                proc.stderr.read()  # drain pipe
+                proc.stderr.read()
 
     return Response(
         generate(),
@@ -526,6 +525,145 @@ def api_proxy_live_tv():
             'Cache-Control': 'no-cache, no-store',
             'Connection': 'keep-alive',
         },
+    )
+
+
+def _proxy_passthrough(source_url, range_header):
+    """Pass-through proxy: follow redirects, forward headers, stream bytes."""
+    logger.info("proxy stream passthrough: %s", source_url)
+
+    upstream_headers = {}
+    if range_header:
+        upstream_headers['Range'] = range_header
+
+    try:
+        upstream = http_requests.get(
+            source_url,
+            headers=upstream_headers,
+            stream=True,
+            timeout=30,
+        )
+    except http_requests.RequestException as e:
+        logger.error("proxy stream passthrough failed for %s: %s", source_url, e)
+        return jsonify({'error': 'Upstream unreachable'}), 502
+
+    resp_headers = {}
+    for key in ('Content-Type', 'Content-Range', 'Content-Length', 'Accept-Ranges'):
+        if key in upstream.headers:
+            resp_headers[key] = upstream.headers[key]
+
+    def generate():
+        try:
+            for chunk in upstream.iter_content(chunk_size=PROXY_CHUNK_SIZE):
+                if chunk:
+                    yield chunk
+        finally:
+            logger.info("proxy stream passthrough disconnected: %s", source_url)
+            upstream.close()
+
+    return Response(
+        generate(),
+        status=upstream.status_code,
+        headers=resp_headers,
+    )
+
+
+@app.route('/api/proxy/stream', methods=['GET', 'OPTIONS'])
+def api_proxy_stream():
+    """Unified stream proxy.
+
+    Routes all video content through the backend so the browser only
+    communicates over HTTPS. When transcoding is enabled (and the source
+    is a .ts live stream), pipes through ffmpeg. Otherwise, passes the
+    stream through directly following redirects and forwarding headers.
+    """
+    if request.method == 'OPTIONS':
+        return Response()
+
+    source_url = request.args.get('url')
+    if not source_url:
+        return jsonify({'error': 'Missing url query parameter'}), 400
+
+    # Read transcode setting from Redis
+    try:
+        from .settings_db import get_settings
+        settings = get_settings()
+    except Exception:
+        settings = {}
+
+    range_header = request.headers.get('Range', '')
+
+    if _should_transcode(source_url, settings):
+        return _proxy_transcode(source_url)
+    else:
+        return _proxy_passthrough(source_url, range_header)
+
+
+# ---------------------------------------------------------------------------
+# Image proxy with filesystem cache
+# ---------------------------------------------------------------------------
+
+IMG_CACHE_DIR = Path('/tmp/img_cache')
+IMG_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _img_cache_path(url: str) -> Path:
+    """Return the cache file path for a given image URL."""
+    import hashlib
+    h = hashlib.sha256(url.encode()).hexdigest()[:16]
+    return IMG_CACHE_DIR / h
+
+
+@app.route('/api/proxy/img', methods=['GET', 'OPTIONS'])
+def api_proxy_img():
+    """Proxy and cache non-HTTPS images for mixed-content avoidance.
+
+    Fetches the image, stores it in /tmp/img_cache, and serves it with
+    the correct Content-Type. Subsequent requests for the same URL are
+    served from disk.
+    """
+    if request.method == 'OPTIONS':
+        return Response()
+
+    source_url = request.args.get('url')
+    if not source_url:
+        return jsonify({'error': 'Missing url query parameter'}), 400
+
+    cache_file = _img_cache_path(source_url)
+
+    # Serve from cache
+    if cache_file.is_file():
+        cached_content_type = cache_file.with_suffix('.ctype').read_text().strip() or 'image/jpeg'
+        return Response(
+            cache_file.read_bytes(),
+            status=200,
+            headers={'Content-Type': cached_content_type, 'Cache-Control': 'public, max-age=604800'},
+        )
+
+    # Fetch from upstream
+    try:
+        resp = http_requests.get(source_url, timeout=15)
+    except http_requests.RequestException as e:
+        logger.warning("proxy img fetch failed for %s: %s", source_url, e)
+        return jsonify({'error': 'Image fetch failed'}), 502
+
+    if resp.status_code != 200 or not resp.content:
+        logger.warning("proxy img upstream returned %s for %s", resp.status_code, source_url)
+        return jsonify({'error': 'Image not found'}), resp.status_code if resp.status_code == 404 else 502
+
+    content_type = resp.headers.get('Content-Type', 'image/jpeg')
+
+    # Write to cache
+    try:
+        cache_file.write_bytes(resp.content)
+        cache_file.with_suffix('.ctype').write_text(content_type)
+    except Exception as e:
+        logger.warning("proxy img cache write failed: %s", e)
+
+    return Response(
+        resp.content,
+        status=200,
+        headers={'Content-Type': content_type, 'Cache-Control': 'public, max-age=604800'},
     )
 
 
@@ -1259,6 +1397,119 @@ def api_get_added_times():
     return jsonify(get_all_added_times())
 
 
+@app.route('/api/library/expanded', methods=['GET'])
+def api_get_library_expanded():
+    """Return the user's library with full Meilisearch documents.
+
+    Useful for mobile clients that want the library contents in a single call
+    instead of resolving IDs through repeated search lookups.
+    """
+    from .library_db import get_library
+
+    library = get_library()
+    expanded = {'movies': [], 'series': [], 'tv_channels': []}
+
+    for content_type, doc_ids in library.items():
+        target = expanded.get(content_type)
+        if target is None:
+            continue
+        for doc_id in doc_ids:
+            try:
+                resp = _get_meilisearch_document(doc_id)
+                if resp.status_code == 200:
+                    target.append(resp.json())
+                else:
+                    logger.warning(
+                        "library/expanded: missing document %s (status %s)",
+                        doc_id,
+                        resp.status_code,
+                    )
+            except http_requests.RequestException as e:
+                logger.warning(
+                    "library/expanded: failed to fetch document %s: %s",
+                    doc_id,
+                    e,
+                )
+
+    return jsonify(expanded)
+
+
+# ---------------------------------------------------------------------------
+# Collections
+# ---------------------------------------------------------------------------
+
+
+@app.route('/api/collections', methods=['GET'])
+def api_get_collections():
+    from .library_db import get_collections
+    col_type = request.args.get('type')
+    return jsonify(get_collections(type=col_type))
+
+
+@app.route('/api/collections', methods=['POST'])
+def api_create_collection():
+    from .library_db import create_collection
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    col_type = (data.get('type') or 'movies').strip().lower()
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    result = create_collection(name, col_type)
+    if result is None:
+        return jsonify({'error': 'Failed to create collection'}), 500
+    logger.info("collection created: %s (%s) [%s]", result['id'], result['name'], result['type'])
+    return jsonify(result), 201
+
+
+@app.route('/api/collections/<col_id>', methods=['GET'])
+def api_get_collection(col_id):
+    from .library_db import get_collection, get_collection_items
+    col = get_collection(col_id)
+    if col is None:
+        return jsonify({'error': 'Collection not found'}), 404
+    items = get_collection_items(col_id)
+    return jsonify({'id': col_id, 'name': col['name'], 'type': col['type'], 'items': items})
+
+
+@app.route('/api/collections/<col_id>', methods=['DELETE'])
+def api_delete_collection(col_id):
+    from .library_db import delete_collection
+    delete_collection(col_id)
+    logger.info("collection deleted: %s", col_id)
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/api/collections/<col_id>/add', methods=['POST'])
+def api_add_to_collection(col_id):
+    from .library_db import add_to_collection
+    data = request.get_json(silent=True) or {}
+    doc_id = data.get('movie_id') or data.get('doc_id')
+    if not doc_id:
+        return jsonify({'error': 'movie_id is required'}), 400
+    ok = add_to_collection(col_id, doc_id)
+    if not ok:
+        return jsonify({'error': 'Collection not found'}), 404
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/api/collections/<col_id>/remove', methods=['POST'])
+def api_remove_from_collection(col_id):
+    from .library_db import remove_from_collection
+    data = request.get_json(silent=True) or {}
+    doc_id = data.get('movie_id') or data.get('doc_id')
+    if not doc_id:
+        return jsonify({'error': 'movie_id is required'}), 400
+    remove_from_collection(col_id, doc_id)
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/api/collections/doc/<doc_id>', methods=['GET'])
+def api_get_doc_collections(doc_id):
+    """Return collection IDs that contain this document."""
+    from .library_db import get_doc_collections
+    return jsonify(get_doc_collections(doc_id))
+
+
 # ---------------------------------------------------------------------------
 # Playback Memory
 # ---------------------------------------------------------------------------
@@ -1384,6 +1635,14 @@ def api_tmdb_delete_series_metadata(doc_id: str):
     delete_series_metadata(doc_id)
     return jsonify({'status': 'ok'})
 
+
+@app.route('/api/person/<int:person_id>', methods=['GET'])
+def api_get_person(person_id: int):
+    from .tmdb import get_person
+    data = get_person(person_id)
+    if data is None:
+        return jsonify({'error': 'Failed to fetch person data'}), 502
+    return jsonify(data)
 
 
 

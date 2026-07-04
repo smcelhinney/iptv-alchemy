@@ -44,10 +44,8 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
   const { settings } = useSettings()
   const styleId = useId()
 
-  // Live TV: route through backend transcoding proxy (HEVC/AC3 → H.264/AAC)
-  const streamUrl = contentType === 'live'
-    ? `${window.location.origin}/api/proxy/live-tv?url=${encodeURIComponent(url)}`
-    : url
+  // Route all content through backend proxy for HTTPS termination
+  const streamUrl = `${window.location.origin}/api/proxy/stream?url=${encodeURIComponent(url)}`
 
   const sizeMap: Record<string, string> = {
     small: '80%',
@@ -260,7 +258,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
         autoPlay
         playsInline
         muted={false}
-        src={contentType === 'vod' ? url : undefined}
+        src={contentType === 'vod' ? streamUrl : undefined}
         onLoadedMetadata={handleLoadedMetadata}
       />
       {noAudio && (

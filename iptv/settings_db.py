@@ -18,6 +18,7 @@ _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6380/0")
 _DEFAULTS: dict[str, str] = {
     "subtitle_enabled": "true",
     "subtitle_size": "normal",
+    "transcode_enabled": "true",
 }
 
 _client = None

@@ -5,6 +5,22 @@ import type { AppConfig } from "../types/config";
 import OutputDirectoriesSection from "./OutputDirectoriesSection";
 import OpenSubtitlesFields from "./OpenSubtitlesFields";
 
+function InfoButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-gray-400 hover:text-gray-200 transition-colors inline-flex items-center gap-1 text-xs"
+      aria-label={label}
+    >
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      {label}
+    </button>
+  );
+}
+
 interface FormData {
   xtream_server_url: string;
   xtream_username: string;
@@ -50,6 +66,7 @@ export default function ConfigPanel() {
   });
 
   const [form, setForm] = useState<FormData | null>(null);
+  const [showTmdbInfo, setShowTmdbInfo] = useState(false);
 
   // Populate local form state once config loads
   const loadedForm = config ? toFormData(config) : null;
@@ -96,28 +113,30 @@ export default function ConfigPanel() {
         </div>
       </section>
 
-      {/* Media Server Config with Tabs */}
+      {/* Media Server Config with Tabs + Output Directories */}
       <section className="bg-gray-800 rounded-lg border border-gray-700 p-5">
         <h3 className="text-lg font-semibold mb-4">Media Server Config</h3>
         <MediaServerConfigSection form={form} set={set} />
+
+        {/* Output Directories */}
+        <div className="mt-6 pt-6 border-t border-gray-700">
+          <OutputDirectoriesSection
+            outputDir={form.output_directory}
+            setOutputDir={setDirect("output_directory")}
+            tvOutputDir={form.tv_output_directory}
+            setTvOutputDir={setDirect("tv_output_directory")}
+            moviesOutputDir={form.movies_output_directory}
+            setMoviesOutputDir={setDirect("movies_output_directory")}
+          />
+        </div>
       </section>
 
       {/* TMDB */}
       <section className="bg-gray-800 rounded-lg border border-gray-700 p-5">
-        <h3 className="text-lg font-semibold mb-4">TMDB</h3>
-        <p className="text-sm text-gray-400 mb-3">
-          API key for The Movie Database metadata enrichment.
-          Get one at{" "}
-          <a
-            href="https://www.themoviedb.org/settings/api"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline"
-          >
-            themoviedb.org/settings/api
-          </a>
-          .
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">TMDB</h3>
+          <InfoButton onClick={() => setShowTmdbInfo(true)} label="What is this for?" />
+        </div>
         <Field
           label="API Key"
           value={form.tmdb_api_key}
@@ -139,17 +158,47 @@ export default function ConfigPanel() {
         />
       </section>
 
-      {/* Output Directories */}
-      <section className="bg-gray-800 rounded-lg border border-gray-700 p-5">
-        <OutputDirectoriesSection
-          outputDir={form.output_directory}
-          setOutputDir={setDirect("output_directory")}
-          tvOutputDir={form.tv_output_directory}
-          setTvOutputDir={setDirect("tv_output_directory")}
-          moviesOutputDir={form.movies_output_directory}
-          setMoviesOutputDir={setDirect("movies_output_directory")}
-        />
-      </section>
+      {/* TMDB Info Modal */}
+      {showTmdbInfo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+          onClick={() => setShowTmdbInfo(false)}
+        >
+          <div
+            className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-gray-700 flex-shrink-0">
+              <h2 className="text-lg font-bold text-white">About TMDB</h2>
+              <button
+                onClick={() => setShowTmdbInfo(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-sm text-gray-300">
+                The Movie Database (TMDB) provides rich metadata for your library — posters, backdrops, cast, crew, ratings, overviews, and more.
+              </p>
+              <p className="text-sm text-gray-300">
+                An API key is required for metadata enrichment. Get a free key at{" "}
+                <a
+                  href="https://www.themoviedb.org/settings/api"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline"
+                >
+                  themoviedb.org/settings/api
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save button */}
       <div className="flex items-center gap-4">

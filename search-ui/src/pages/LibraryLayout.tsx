@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation, type ReactNode } from 'react-router-dom'
+import { useEffect, type ReactNode } from 'react'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useLibrary } from '../hooks/useLibrary'
 
 export function LibrarySidebar({ children }: { children: ReactNode }) {
@@ -23,18 +23,19 @@ export function SortSection({ children }: { children: ReactNode }) {
   )
 }
 
-export function SortButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+export function SortButton({ to, active, onClick, label }: { to: string; active: boolean; onClick: () => void; label: string }) {
   return (
-    <button
+    <NavLink
+      to={to}
       onClick={onClick}
-      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
         active
           ? 'bg-gray-800 text-white'
           : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
       }`}
     >
       {label}
-    </button>
+    </NavLink>
   )
 }
 

@@ -2,8 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/hit.dart';
 import '../providers/playback_memory_provider.dart';
@@ -33,28 +32,43 @@ class PlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
-  late final Player _player;
-  late final VideoController _controller;
+  late VideoPlayerController _controller;
   Timer? _saveTimer;
   bool _controlsVisible = true;
   Timer? _controlsTimer;
+  bool _isInitialized = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _player = Player();
-    _controller = VideoController(_player);
+    _initializePlayer();
+  }
 
-    _player.open(Media(widget.args.url));
-    _player.setPlaylistMode(PlaylistMode.none);
+  Future<void> _initializePlayer() async {
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.args.url),
+      httpHeaders: const {
+        'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
+      },
+    );
 
-    _player.stream.error.listen((error) {
-      debugPrint('Player error: $error');
-    });
-
-    _restorePosition();
-    _startSaveTimer();
-    _hideControlsAfterDelay();
+    try {
+      await _controller.initialize();
+      await _restorePosition();
+      await _controller.play();
+      _startSaveTimer();
+      _hideControlsAfterDelay();
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
+    } catch (e, stack) {
+      debugPrint('Failed to initialize video player: $e');
+      debugPrint(stack.toString());
+      if (mounted) {
+        setState(() => _error = 'Failed to load video: $e');
+      }
+    }
   }
 
   Future<void> _restorePosition() async {
@@ -62,7 +76,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       final memory = await ref.read(playbackMemoryProvider.future);
       final saved = memory[widget.args.id];
       if (saved != null && saved.positionSeconds > 0) {
-        await _player.seek(Duration(seconds: saved.positionSeconds.toInt()));
+        await _controller.seekTo(Duration(seconds: saved.positionSeconds.toInt()));
       }
     } catch (e) {
       debugPrint('Failed to restore position: $e');
@@ -76,8 +90,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   Future<void> _savePosition() async {
-    final position = _player.state.position;
-    final duration = _player.state.duration;
+    if (!_controller.value.isInitialized) return;
+    final position = _controller.value.position;
+    final duration = _controller.value.duration;
     if (position.inSeconds <= 0 || duration.inSeconds <= 0) return;
 
     try {
@@ -118,7 +133,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     _saveTimer?.cancel();
     _controlsTimer?.cancel();
     _savePosition();
-    _player.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -136,10 +151,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             GestureDetector(
               onTap: _toggleControls,
               child: Center(
-                child: Video(controller: _controller),
+                child: _isInitialized
+                    ? AspectRatio(
+                        aspectRatio: _controller.value.aspectRatio,
+                        child: VideoPlayer(_controller),
+                      )
+                    : _error != null
+                        ? Text(_error!, style: const TextStyle(color: Colors.white))
+                        : const CircularProgressIndicator(),
               ),
             ),
-            if (_controlsVisible)
+            if (_controlsVisible && _isInitialized)
               Container(
                 color: Colors.black54,
                 child: SafeArea(
@@ -161,67 +183,50 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           IconButton(
                             icon: const Icon(Icons.replay_10, size: 36),
                             onPressed: () {
-                              final newPos = _player.state.position -
-                                  const Duration(seconds: 10);
-                              _player.seek(newPos);
+                              _controller.seekTo(_controller.value.position - const Duration(seconds: 10));
                               _hideControlsAfterDelay();
                             },
                           ),
                           const SizedBox(width: 24),
-                          StreamBuilder<bool>(
-                            stream: _player.stream.playing,
-                            builder: (context, snapshot) {
-                              final playing = snapshot.data ?? false;
-                              return IconButton(
-                                icon: Icon(
-                                  playing ? Icons.pause : Icons.play_arrow,
-                                  size: 48,
-                                ),
-                                onPressed: () {
-                                  playing ? _player.pause() : _player.play();
-                                  _hideControlsAfterDelay();
-                                },
-                              );
+                          IconButton(
+                            icon: Icon(
+                              _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                              size: 48,
+                            ),
+                            onPressed: () {
+                              _controller.value.isPlaying ? _controller.pause() : _controller.play();
+                              _hideControlsAfterDelay();
                             },
                           ),
                           const SizedBox(width: 24),
                           IconButton(
                             icon: const Icon(Icons.forward_10, size: 36),
                             onPressed: () {
-                              final newPos = _player.state.position +
-                                  const Duration(seconds: 10);
-                              _player.seek(newPos);
+                              _controller.seekTo(_controller.value.position + const Duration(seconds: 10));
                               _hideControlsAfterDelay();
                             },
                           ),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      StreamBuilder<Duration>(
-                        stream: _player.stream.position,
-                        builder: (context, positionSnapshot) {
-                          return StreamBuilder<Duration>(
-                            stream: _player.stream.duration,
-                            builder: (context, durationSnapshot) {
-                              final position = positionSnapshot.data ?? Duration.zero;
-                              final duration = durationSnapshot.data ?? Duration.zero;
-                              if (duration.inSeconds <= 0) {
-                                return const SizedBox.shrink();
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24),
-                                child: Slider(
-                                  value: position.inSeconds
-                                      .clamp(0, duration.inSeconds)
-                                      .toDouble(),
-                                  max: duration.inSeconds.toDouble(),
-                                  onChanged: (value) {
-                                    _player.seek(Duration(seconds: value.toInt()));
-                                    _hideControlsAfterDelay();
-                                  },
-                                ),
-                              );
-                            },
+                      ValueListenableBuilder<VideoPlayerValue>(
+                        valueListenable: _controller,
+                        builder: (context, value, child) {
+                          if (!value.isInitialized || value.duration.inSeconds <= 0) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Slider(
+                              value: value.position.inSeconds
+                                  .clamp(0, value.duration.inSeconds)
+                                  .toDouble(),
+                              max: value.duration.inSeconds.toDouble(),
+                              onChanged: (position) {
+                                _controller.seekTo(Duration(seconds: position.toInt()));
+                                _hideControlsAfterDelay();
+                              },
+                            ),
                           );
                         },
                       ),

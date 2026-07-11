@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Hit {
 
- String get id; String? get name; String? get category; String? get logo; String get url;@JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) ContentType get type;@JsonKey(name: 'series_name') String? get seriesName;@JsonKey(name: 'episode_name') String? get episodeName; int? get season; int? get episode;@JsonKey(name: 'full_episode_id') String? get fullEpisodeId;@JsonKey(name: 'movie_name') String? get movieName; int? get year; List<Episode>? get episodes;@JsonKey(name: 'episode_count') int? get episodeCount;
+ String get id; String? get name; String? get category; String? get logo; String? get url;@JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) ContentType get type;@JsonKey(name: 'series_name') String? get seriesName;@JsonKey(name: 'episode_name') String? get episodeName; int? get season; int? get episode;@JsonKey(name: 'full_episode_id') String? get fullEpisodeId;@JsonKey(name: 'movie_name') String? get movieName; int? get year; List<Episode>? get episodes;@JsonKey(name: 'episode_count') int? get episodeCount;
 /// Create a copy of Hit
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $HitCopyWith<$Res>  {
   factory $HitCopyWith(Hit value, $Res Function(Hit) _then) = _$HitCopyWithImpl;
 @useResult
 $Res call({
- String id, String? name, String? category, String? logo, String url,@JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) ContentType type,@JsonKey(name: 'series_name') String? seriesName,@JsonKey(name: 'episode_name') String? episodeName, int? season, int? episode,@JsonKey(name: 'full_episode_id') String? fullEpisodeId,@JsonKey(name: 'movie_name') String? movieName, int? year, List<Episode>? episodes,@JsonKey(name: 'episode_count') int? episodeCount
+ String id, String? name, String? category, String? logo, String? url,@JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) ContentType type,@JsonKey(name: 'series_name') String? seriesName,@JsonKey(name: 'episode_name') String? episodeName, int? season, int? episode,@JsonKey(name: 'full_episode_id') String? fullEpisodeId,@JsonKey(name: 'movie_name') String? movieName, int? year, List<Episode>? episodes,@JsonKey(name: 'episode_count') int? episodeCount
 });
 
 
@@ -65,14 +65,14 @@ class _$HitCopyWithImpl<$Res>
 
 /// Create a copy of Hit
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,Object? category = freezed,Object? logo = freezed,Object? url = null,Object? type = null,Object? seriesName = freezed,Object? episodeName = freezed,Object? season = freezed,Object? episode = freezed,Object? fullEpisodeId = freezed,Object? movieName = freezed,Object? year = freezed,Object? episodes = freezed,Object? episodeCount = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,Object? category = freezed,Object? logo = freezed,Object? url = freezed,Object? type = null,Object? seriesName = freezed,Object? episodeName = freezed,Object? season = freezed,Object? episode = freezed,Object? fullEpisodeId = freezed,Object? movieName = freezed,Object? year = freezed,Object? episodes = freezed,Object? episodeCount = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String?,logo: freezed == logo ? _self.logo : logo // ignore: cast_nullable_to_non_nullable
-as String?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String?,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ContentType,seriesName: freezed == seriesName ? _self.seriesName : seriesName // ignore: cast_nullable_to_non_nullable
 as String?,episodeName: freezed == episodeName ? _self.episodeName : episodeName // ignore: cast_nullable_to_non_nullable
 as String?,season: freezed == season ? _self.season : season // ignore: cast_nullable_to_non_nullable
@@ -167,7 +167,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? name,  String? category,  String? logo,  String url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson)  ContentType type, @JsonKey(name: 'series_name')  String? seriesName, @JsonKey(name: 'episode_name')  String? episodeName,  int? season,  int? episode, @JsonKey(name: 'full_episode_id')  String? fullEpisodeId, @JsonKey(name: 'movie_name')  String? movieName,  int? year,  List<Episode>? episodes, @JsonKey(name: 'episode_count')  int? episodeCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? name,  String? category,  String? logo,  String? url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson)  ContentType type, @JsonKey(name: 'series_name')  String? seriesName, @JsonKey(name: 'episode_name')  String? episodeName,  int? season,  int? episode, @JsonKey(name: 'full_episode_id')  String? fullEpisodeId, @JsonKey(name: 'movie_name')  String? movieName,  int? year,  List<Episode>? episodes, @JsonKey(name: 'episode_count')  int? episodeCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Hit() when $default != null:
 return $default(_that.id,_that.name,_that.category,_that.logo,_that.url,_that.type,_that.seriesName,_that.episodeName,_that.season,_that.episode,_that.fullEpisodeId,_that.movieName,_that.year,_that.episodes,_that.episodeCount);case _:
@@ -188,7 +188,7 @@ return $default(_that.id,_that.name,_that.category,_that.logo,_that.url,_that.ty
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? name,  String? category,  String? logo,  String url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson)  ContentType type, @JsonKey(name: 'series_name')  String? seriesName, @JsonKey(name: 'episode_name')  String? episodeName,  int? season,  int? episode, @JsonKey(name: 'full_episode_id')  String? fullEpisodeId, @JsonKey(name: 'movie_name')  String? movieName,  int? year,  List<Episode>? episodes, @JsonKey(name: 'episode_count')  int? episodeCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? name,  String? category,  String? logo,  String? url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson)  ContentType type, @JsonKey(name: 'series_name')  String? seriesName, @JsonKey(name: 'episode_name')  String? episodeName,  int? season,  int? episode, @JsonKey(name: 'full_episode_id')  String? fullEpisodeId, @JsonKey(name: 'movie_name')  String? movieName,  int? year,  List<Episode>? episodes, @JsonKey(name: 'episode_count')  int? episodeCount)  $default,) {final _that = this;
 switch (_that) {
 case _Hit():
 return $default(_that.id,_that.name,_that.category,_that.logo,_that.url,_that.type,_that.seriesName,_that.episodeName,_that.season,_that.episode,_that.fullEpisodeId,_that.movieName,_that.year,_that.episodes,_that.episodeCount);case _:
@@ -208,7 +208,7 @@ return $default(_that.id,_that.name,_that.category,_that.logo,_that.url,_that.ty
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? name,  String? category,  String? logo,  String url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson)  ContentType type, @JsonKey(name: 'series_name')  String? seriesName, @JsonKey(name: 'episode_name')  String? episodeName,  int? season,  int? episode, @JsonKey(name: 'full_episode_id')  String? fullEpisodeId, @JsonKey(name: 'movie_name')  String? movieName,  int? year,  List<Episode>? episodes, @JsonKey(name: 'episode_count')  int? episodeCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? name,  String? category,  String? logo,  String? url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson)  ContentType type, @JsonKey(name: 'series_name')  String? seriesName, @JsonKey(name: 'episode_name')  String? episodeName,  int? season,  int? episode, @JsonKey(name: 'full_episode_id')  String? fullEpisodeId, @JsonKey(name: 'movie_name')  String? movieName,  int? year,  List<Episode>? episodes, @JsonKey(name: 'episode_count')  int? episodeCount)?  $default,) {final _that = this;
 switch (_that) {
 case _Hit() when $default != null:
 return $default(_that.id,_that.name,_that.category,_that.logo,_that.url,_that.type,_that.seriesName,_that.episodeName,_that.season,_that.episode,_that.fullEpisodeId,_that.movieName,_that.year,_that.episodes,_that.episodeCount);case _:
@@ -223,14 +223,14 @@ return $default(_that.id,_that.name,_that.category,_that.logo,_that.url,_that.ty
 @JsonSerializable()
 
 class _Hit implements Hit {
-  const _Hit({required this.id, this.name, this.category, this.logo, required this.url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) required this.type, @JsonKey(name: 'series_name') this.seriesName, @JsonKey(name: 'episode_name') this.episodeName, this.season, this.episode, @JsonKey(name: 'full_episode_id') this.fullEpisodeId, @JsonKey(name: 'movie_name') this.movieName, this.year, final  List<Episode>? episodes, @JsonKey(name: 'episode_count') this.episodeCount}): _episodes = episodes;
+  const _Hit({required this.id, this.name, this.category, this.logo, this.url, @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) required this.type, @JsonKey(name: 'series_name') this.seriesName, @JsonKey(name: 'episode_name') this.episodeName, this.season, this.episode, @JsonKey(name: 'full_episode_id') this.fullEpisodeId, @JsonKey(name: 'movie_name') this.movieName, this.year, final  List<Episode>? episodes, @JsonKey(name: 'episode_count') this.episodeCount}): _episodes = episodes;
   factory _Hit.fromJson(Map<String, dynamic> json) => _$HitFromJson(json);
 
 @override final  String id;
 @override final  String? name;
 @override final  String? category;
 @override final  String? logo;
-@override final  String url;
+@override final  String? url;
 @override@JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) final  ContentType type;
 @override@JsonKey(name: 'series_name') final  String? seriesName;
 @override@JsonKey(name: 'episode_name') final  String? episodeName;
@@ -283,7 +283,7 @@ abstract mixin class _$HitCopyWith<$Res> implements $HitCopyWith<$Res> {
   factory _$HitCopyWith(_Hit value, $Res Function(_Hit) _then) = __$HitCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? name, String? category, String? logo, String url,@JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) ContentType type,@JsonKey(name: 'series_name') String? seriesName,@JsonKey(name: 'episode_name') String? episodeName, int? season, int? episode,@JsonKey(name: 'full_episode_id') String? fullEpisodeId,@JsonKey(name: 'movie_name') String? movieName, int? year, List<Episode>? episodes,@JsonKey(name: 'episode_count') int? episodeCount
+ String id, String? name, String? category, String? logo, String? url,@JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson) ContentType type,@JsonKey(name: 'series_name') String? seriesName,@JsonKey(name: 'episode_name') String? episodeName, int? season, int? episode,@JsonKey(name: 'full_episode_id') String? fullEpisodeId,@JsonKey(name: 'movie_name') String? movieName, int? year, List<Episode>? episodes,@JsonKey(name: 'episode_count') int? episodeCount
 });
 
 
@@ -300,14 +300,14 @@ class __$HitCopyWithImpl<$Res>
 
 /// Create a copy of Hit
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,Object? category = freezed,Object? logo = freezed,Object? url = null,Object? type = null,Object? seriesName = freezed,Object? episodeName = freezed,Object? season = freezed,Object? episode = freezed,Object? fullEpisodeId = freezed,Object? movieName = freezed,Object? year = freezed,Object? episodes = freezed,Object? episodeCount = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,Object? category = freezed,Object? logo = freezed,Object? url = freezed,Object? type = null,Object? seriesName = freezed,Object? episodeName = freezed,Object? season = freezed,Object? episode = freezed,Object? fullEpisodeId = freezed,Object? movieName = freezed,Object? year = freezed,Object? episodes = freezed,Object? episodeCount = freezed,}) {
   return _then(_Hit(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String?,logo: freezed == logo ? _self.logo : logo // ignore: cast_nullable_to_non_nullable
-as String?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String?,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ContentType,seriesName: freezed == seriesName ? _self.seriesName : seriesName // ignore: cast_nullable_to_non_nullable
 as String?,episodeName: freezed == episodeName ? _self.episodeName : episodeName // ignore: cast_nullable_to_non_nullable
 as String?,season: freezed == season ? _self.season : season // ignore: cast_nullable_to_non_nullable

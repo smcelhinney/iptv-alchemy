@@ -13,7 +13,7 @@ abstract class Hit with _$Hit {
     String? name,
     String? category,
     String? logo,
-    required String url,
+    String? url,
     @JsonKey(fromJson: _contentTypeFromJson, toJson: _contentTypeToJson)
     required ContentType type,
     @JsonKey(name: 'series_name') String? seriesName,

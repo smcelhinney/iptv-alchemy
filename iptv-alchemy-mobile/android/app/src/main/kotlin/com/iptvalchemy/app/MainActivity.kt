@@ -1,4 +1,4 @@
-package com.iptvalchemy.iptv_alchemy_mobile
+package com.iptvalchemy.app
 
 import io.flutter.embedding.android.FlutterActivity
 

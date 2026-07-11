@@ -11,7 +11,7 @@ _Hit _$HitFromJson(Map<String, dynamic> json) => _Hit(
   name: json['name'] as String?,
   category: json['category'] as String?,
   logo: json['logo'] as String?,
-  url: json['url'] as String,
+  url: json['url'] as String?,
   type: _contentTypeFromJson(json['type'] as String),
   seriesName: json['series_name'] as String?,
   episodeName: json['episode_name'] as String?,

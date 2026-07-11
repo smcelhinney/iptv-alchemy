@@ -11,13 +11,20 @@ class DetailScreen extends StatelessWidget {
   const DetailScreen({super.key, required this.hit});
 
   void _play(BuildContext context, {Episode? episode}) {
+    final url = episode?.url ?? hit.url;
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No playable stream URL available')),
+      );
+      return;
+    }
     final title = hit.name ?? hit.movieName ?? hit.seriesName ?? 'Untitled';
     context.push(
       '/player',
       extra: PlayerScreenArguments(
         id: episode?.id ?? hit.id,
         title: episode?.episodeName ?? title,
-        url: episode?.url ?? hit.url,
+        url: url,
         hit: hit,
       ),
     );

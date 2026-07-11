@@ -14,18 +14,20 @@ class IptvAlchemyApp extends ConsumerWidget {
     return configAsync.when(
       data: (config) {
         final router = createRouter(hasServerUrl: config.serverUrl != null);
-        return MaterialApp.router(
-          title: 'IPTV Alchemy',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.deepPurple,
+        return FocusTraversalGroup(
+          child: MaterialApp.router(
+            title: 'IPTV Alchemy',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.deepPurple,
+                brightness: Brightness.dark,
+              ),
               brightness: Brightness.dark,
+              useMaterial3: true,
             ),
-            brightness: Brightness.dark,
-            useMaterial3: true,
+            routerConfig: router,
           ),
-          routerConfig: router,
         );
       },
       loading: () => const MaterialApp(

@@ -1,15 +1,18 @@
 import { useState, useMemo } from 'react'
-import { useQuery, useQueries } from '@tanstack/react-query'
+import { Outlet, NavLink } from 'react-router-dom'
+import { useQueries } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
 import type { Hit } from '../types'
-import SearchCard from '../components/SearchCard'
 import { LibrarySidebar, SortSection, SortButton } from './LibraryLayout'
+import type { ShowsContext } from './ShowsGrid'
 
 type ShowSort = 'alpha' | 'added'
 
 export default function ShowsPage() {
   const [sort, setSort] = useState<ShowSort>('alpha')
+  const basePath = '/library/tv-shows'
+  const collectionsPath = '/library/tv-shows/collections'
   const { data: library } = useLibrary()
   const ids = library?.series ?? []
   const { data: addedTimes } = useAddedTimes()
@@ -50,56 +53,50 @@ export default function ShowsPage() {
     return <EmptyState message="No TV shows in your library yet." />
   }
 
+  const contextValue: ShowsContext = {
+    sortedIds,
+    removeFromLib: (id: string) => removeFromLib.mutate({ type: 'series', id }),
+  }
+
   return (
     <>
       <LibrarySidebar>
         <SortSection>
-          <SortButton active={sort === 'alpha'} onClick={() => setSort('alpha')} label="Alphabetically" />
-          <SortButton active={sort === 'added'} onClick={() => setSort('added')} label="Date Added" />
+          <SortButton to={basePath} active={sort === 'alpha'} onClick={() => setSort('alpha')} label="Alphabetically" />
+          <SortButton to={basePath} active={sort === 'added'} onClick={() => setSort('added')} label="Date Added" />
         </SortSection>
+        <div className="border-t border-gray-700 my-2" />
+        <NavLink
+          to={collectionsPath}
+          className={({ isActive }: { isActive: boolean }) =>
+            `w-full text-left px-3 py-2 rounded-lg text-sm transition-colors block ${
+              isActive
+                ? 'bg-gray-800 text-white'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+            }`
+          }
+        >
+          Collections
+        </NavLink>
       </LibrarySidebar>
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {sortedIds.map((id) => (
-              <ShowCard key={id} id={id} onRemove={() => { removeFromLib.mutate({ type: 'series', id }) }} />
-            ))}
-          </div>
+          <Outlet context={contextValue} />
         </div>
       </div>
     </>
   )
 }
 
-function ShowCard({ id, onRemove }: { id: string; onRemove: () => void }) {
-  const { data: doc } = useQuery({
-    queryKey: ['document', id],
-    queryFn: () => fetchDocument<Hit>(id),
-  })
-
-  const stubHit: Hit = doc || {
-    id,
-    type: 'series' as const,
-    name: id,
-    series_name: id,
-    url: '',
-    logo: '',
-  }
-
-  return (
-    <div className="min-w-0 flex">
-      <SearchCard hit={stubHit} onSelect={() => {}} to={`/library/tv-shows/${id}`} onRemove={onRemove} />
-    </div>
-  )
-}
-
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="text-center py-16">
-      <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-      </svg>
-      <p className="text-gray-400">{message}</p>
+    <div className="flex-1 flex items-center justify-center p-6">
+      <div className="text-center">
+        <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+        </svg>
+        <p className="text-gray-400">{message}</p>
+      </div>
     </div>
   )
 }

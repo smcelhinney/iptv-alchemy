@@ -10,6 +10,7 @@ import { usePlayerStore } from '../stores/playerStore'
 import { useFocusable } from '../hooks/useFocusable'
 import { useConnectionStatus } from '../contexts/ConnectionStatusContext'
 import { isTV } from '../lib/device'
+import { proxyImageUrl } from '../lib/proxy'
 import Tooltip from './Tooltip'
 
 interface SearchCardProps {
@@ -75,7 +76,7 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
 
   const playerUrl = listing ? (hit as ListingHit).channel_url : (hit as HitType).url
 
-  const imageSrc = listing ? (hit as ListingHit).channel_logo : (hit as HitType).logo
+  const imageSrc = proxyImageUrl(listing ? (hit as ListingHit).channel_logo : (hit as HitType).logo)
 
   const listingOnNow = listing ? isOnNow((hit as ListingHit).start_timestamp, (hit as ListingHit).stop_timestamp) : false
 

@@ -3,10 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import type { Hit, Episode, SearchCardItem } from '../types'
 import type { ListingHit } from '../types/listings'
 import { fetchDocument } from '../lib/api'
-import { formatTime, isOnNow, isListingHit } from '../features/shared/utils'
+import { isOnNow, isListingHit } from '../features/shared/utils'
 import { pushBackAction, popBackAction } from '../hooks/useTVBackHandler'
 import { isTV } from '../lib/device'
+import { proxyImageUrl } from '../lib/proxy'
 import { useLibraryIds, useAddToLibrary, useRemoveFromLibrary } from '../hooks/useLibrary'
+import { usePlayerStore } from '../stores/playerStore'
 import Tooltip from './Tooltip'
 
 interface DetailModalProps {
@@ -58,9 +60,11 @@ function groupBySeason(episodes: Episode[]): { seasons: Record<number, Episode[]
 }
 
 export default function DetailModal({ hit, onClose }: DetailModalProps) {
+  const openPlayer = usePlayerStore((s) => s.openPlayer)
 
   const isListing = hit ? isListingHit(hit) : false
   const contentHit = hit as Hit | null
+  const listing = isListing ? (hit as ListingHit) : null
 
   const { data: doc, isLoading, error } = useQuery({
     queryKey: ['document', hit?.id],
@@ -132,7 +136,6 @@ export default function DetailModal({ hit, onClose }: DetailModalProps) {
 
   const isSeries = !isListing && contentHit?.type === 'series'
   const isMovie = !isListing && contentHit?.type === 'movie'
-  const listing = isListing ? (hit as ListingHit) : null
   const title = isListing
     ? listing!.title
     : contentHit?.series_name || contentHit?.movie_name || contentHit?.name || 'Unknown'
@@ -150,7 +153,7 @@ export default function DetailModal({ hit, onClose }: DetailModalProps) {
         <div className="flex items-start gap-4 p-5 border-b border-gray-700 flex-shrink-0">
           {(isListing ? listing!.channel_logo : (contentHit as Hit)?.logo) ? (
             <img
-              src={isListing ? listing!.channel_logo : (contentHit as Hit)!.logo}
+              src={proxyImageUrl(isListing ? listing!.channel_logo : (contentHit as Hit)!.logo) ?? undefined}
               alt={title}
               className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-gray-800"
               onError={(e) => { e.currentTarget.style.display = 'none' }}
@@ -182,7 +185,9 @@ export default function DetailModal({ hit, onClose }: DetailModalProps) {
             )}
             {isListing && listing && (
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm text-blue-400">{formatTime(listing.start_timestamp)}</span>
+                <span className="text-sm text-blue-400">
+                  {new Date(listing.start_timestamp * 1000).toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })} UTC
+                </span>
                 {isOnNow(listing.start_timestamp, listing.stop_timestamp) && (
                   <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-600 text-white animate-pulse">
                     ON NOW
@@ -230,6 +235,18 @@ export default function DetailModal({ hit, onClose }: DetailModalProps) {
           {/* Listing view */}
           {isListing && listing && (
             <div className="space-y-4">
+              <button
+                onClick={() => {
+                  openPlayer(listing.channel_url, listing.channel_name || listing.title || 'Live TV', 'live')
+                  onClose()
+                }}
+                className="flex items-center gap-1.5 h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                </svg>
+                Play Channel
+              </button>
               {listing.description && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-400 mb-1">Description</h3>
@@ -243,7 +260,9 @@ export default function DetailModal({ hit, onClose }: DetailModalProps) {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-400 mb-1">Starts</h3>
-                  <p className="text-white text-sm">{formatTime(listing.start_timestamp)}</p>
+                  <p className="text-white text-sm">
+                    {new Date(listing.start_timestamp * 1000).toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })} UTC
+                  </p>
                 </div>
               </div>
             </div>

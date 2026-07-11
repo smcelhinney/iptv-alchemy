@@ -71,6 +71,27 @@ export default function SettingsDrawer({ open, onClose }: Props) {
         <div className="p-5 space-y-6">
           <div>
             <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-300">Transcode Live TV</h3>
+              <button
+                onClick={() => setSetting('transcode_enabled', settings.transcode_enabled === 'true' ? 'false' : 'true')}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  settings.transcode_enabled !== 'false' ? 'bg-blue-600' : 'bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    settings.transcode_enabled !== 'false' ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <span className="text-xs text-gray-500 mt-1 block">
+              {settings.transcode_enabled !== 'false' ? 'On — convert HEVC/AC3 for browser' : 'Off — raw passthrough (faster, may lack audio)'}
+            </span>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-300">Subtitles</h3>
               <button
                 onClick={() => setSetting('subtitle_enabled', settings.subtitle_enabled === 'true' ? 'false' : 'true')}

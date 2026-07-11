@@ -24,6 +24,7 @@ function loadLayout(): Layout {
 }
 
 const HEADER_HEIGHT = 36
+const SEEK_SECONDS = 10
 
 function clampToViewport(layout: Layout): Layout {
   const cw = window.innerWidth
@@ -59,6 +60,7 @@ export default function FloatingPlayer() {
   const [resizing, setResizing] = useState(false)
   const dragOffset = useRef({ x: 0, y: 0 })
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 })
+  const videoContainerRef = useRef<HTMLDivElement>(null)
 
   // Clamp to viewport when opening (viewports can change between saves)
   useEffect(() => {
@@ -73,15 +75,70 @@ export default function FloatingPlayer() {
     })
   }, [open])
 
-  // Close on Escape
+  // Keyboard controls: close on Escape, seek VOD on arrow keys
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closePlayer()
+      if (e.key === 'Escape') {
+        if (document.fullscreenElement) {
+          e.preventDefault()
+          document.exitFullscreen?.()
+        } else {
+          closePlayer()
+        }
+        return
+      }
+
+      if (contentType !== 'vod') return
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+
+      const active = document.activeElement
+      if (
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement ||
+        active?.getAttribute('contenteditable') === 'true'
+      ) {
+        return
+      }
+
+      const video = videoContainerRef.current?.querySelector('video')
+      if (!video || !isFinite(video.duration)) return
+
+      e.preventDefault()
+      if (e.key === 'ArrowLeft') {
+        video.currentTime = Math.max(0, video.currentTime - SEEK_SECONDS)
+      } else {
+        video.currentTime = Math.min(video.duration, video.currentTime + SEEK_SECONDS)
+      }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, closePlayer])
+
+    // Use capture phase so native video controls can't swallow the event
+    window.addEventListener('keydown', handler, true)
+
+    return () => {
+      window.removeEventListener('keydown', handler, true)
+    }
+  }, [open, closePlayer, contentType])
+
+  // Native video controls trap focus and swallow Escape. Blur the video
+  // element after any mouse interaction so focus returns to the page.
+  useEffect(() => {
+    if (!open) return
+    const video = videoContainerRef.current?.querySelector('video')
+    if (!video) return
+
+    const onMouseUp = () => {
+      // Defer so the browser finishes its own focus handling first.
+      requestAnimationFrame(() => {
+        if (document.activeElement === video) {
+          video.blur()
+        }
+      })
+    }
+
+    video.addEventListener('mouseup', onMouseUp)
+    return () => video.removeEventListener('mouseup', onMouseUp)
+  }, [open])
 
   // Drag handlers
   const onDragMouseDown = useCallback((e: React.MouseEvent) => {
@@ -174,7 +231,7 @@ export default function FloatingPlayer() {
       </div>
 
       {/* Video area */}
-      <div className="flex-1 overflow-hidden relative">
+      <div ref={videoContainerRef} className="flex-1 overflow-hidden relative">
         <StreamPlayer url={url} contentType={contentType} favouriteId={favouriteId} initialTime={initialTime} savePlaybackId={savePlaybackId} subtitleUrl={subtitleUrl} />
       </div>
 

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useId, useCallback } from 'react'
 import mpegts from 'mpegts.js'
-import { useSavePlaybackMemory } from '../hooks/usePlaybackMemory'
 import { useSettings } from '../contexts/SettingsContext'
 
 interface StreamPlayerProps {
@@ -42,14 +41,11 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
   const [error, setError] = useState(false)
   const [noAudio, setNoAudio] = useState(false)
   const [vttText, setVttText] = useState<string | null>(null)
-  const { mutate: saveProgress } = useSavePlaybackMemory()
   const { settings } = useSettings()
   const styleId = useId()
 
-  // Live TV: route through backend transcoding proxy (HEVC/AC3 → H.264/AAC)
-  const streamUrl = contentType === 'live'
-    ? `${window.location.origin}/api/proxy/live-tv?url=${encodeURIComponent(url)}`
-    : url
+  // Route all content through backend proxy for HTTPS termination
+  const streamUrl = `${window.location.origin}/api/proxy/stream?url=${encodeURIComponent(url)}`
 
   const sizeMap: Record<string, string> = {
     small: '80%',
@@ -79,7 +75,22 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
     }
   }
 
-  // Save playback progress every 5s for VOD
+  // Save playback progress every 5s for VOD (offloaded to Service Worker)
+  const saveProgress = useCallback((id: string, currentTime: number, duration: number) => {
+    const payload = { type: 'SAVE_PLAYBACK', id, currentTime, duration }
+    if (navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.controller.postMessage(payload)
+    } else {
+      // Fallback: raw fetch with keepalive (no React Query, no re-renders)
+      fetch('/api/playback/memory', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, currentTime, duration }),
+        keepalive: true,
+      }).catch(() => {})
+    }
+  }, [])
+
   useEffect(() => {
     const progressId = savePlaybackId || favouriteId
     if (contentType !== 'vod' || !progressId) return
@@ -88,7 +99,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
       const video = videoRef.current
       if (!video || video.paused || video.ended) return
       const dur = video.duration || 0
-      saveProgress({ id: progressId, currentTime: video.currentTime, duration: dur })
+      saveProgress(progressId, video.currentTime, dur)
     }, 5000)
 
     return () => clearInterval(interval)
@@ -247,7 +258,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
         autoPlay
         playsInline
         muted={false}
-        src={contentType === 'vod' ? url : undefined}
+        src={contentType === 'vod' ? streamUrl : undefined}
         onLoadedMetadata={handleLoadedMetadata}
       />
       {noAudio && (

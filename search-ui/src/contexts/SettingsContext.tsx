@@ -15,6 +15,7 @@ const _DEFAULTS: UserSettings = {
   subtitle_enabled: 'true',
   subtitle_size: 'normal',
   subtitle_offset: '0',
+  transcode_enabled: 'true',
 }
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {

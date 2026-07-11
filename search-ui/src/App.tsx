@@ -4,14 +4,17 @@ import { useEffect, lazy, Suspense } from "react";
 import Header from "./features/shared/components/Header";
 import LibraryLayout from "./pages/LibraryLayout";
 import TvChannelsPage from "./pages/TvChannelsPage";
+import TvChannelsGrid from "./pages/TvChannelsGrid";
 import MoviesLayout from "./pages/MoviesLayout";
 import MoviesGrid from "./pages/MoviesGrid";
 import ShowsPage from "./pages/ShowsPage";
+import ShowsGrid from "./pages/ShowsGrid";
 import SearchPage from "./pages/SearchPage";
 import AdminPage from "./pages/AdminPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import ShowDetailPage from "./pages/ShowDetailPage";
 import CollectionsPage from "./pages/CollectionsPage";
+import CollectionDetailPage from "./pages/CollectionDetailPage";
 
 import OnboardingPage from "./pages/OnboardingPage";
 import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext";
@@ -144,12 +147,21 @@ function AppShell() {
           } />
           {/* Library routes */}
           <Route path="/library" element={<LibraryLayout />}>
-            <Route path="tv-channels" element={<TvChannelsPage />} />
+            <Route path="tv-channels" element={<TvChannelsPage />}>
+              <Route index element={<TvChannelsGrid />} />
+              <Route path="collections" element={<CollectionsPage type="tv_channels" />} />
+              <Route path="collections/:id" element={<CollectionDetailPage type="tv_channels" />} />
+            </Route>
             <Route path="movies" element={<MoviesLayout />}>
               <Route index element={<MoviesGrid />} />
-              <Route path="collections" element={<CollectionsPage />} />
+              <Route path="collections" element={<CollectionsPage type="movies" />} />
+              <Route path="collections/:id" element={<CollectionDetailPage type="movies" />} />
             </Route>
-            <Route path="tv-shows" element={<ShowsPage />} />
+            <Route path="tv-shows" element={<ShowsPage />}>
+              <Route index element={<ShowsGrid />} />
+              <Route path="collections" element={<CollectionsPage type="series" />} />
+              <Route path="collections/:id" element={<CollectionDetailPage type="series" />} />
+            </Route>
           </Route>
           <Route path="/library/movies/:id" element={<MovieDetailPage />} />
           <Route path="/library/tv-shows/:id" element={<ShowDetailPage />} />

@@ -13,7 +13,11 @@ import { usePlayerStore } from '../stores/playerStore'
 import TMDBMetadataModal from '../components/TMDBMetadataModal'
 import MenuDropdown from '../components/MenuDropdown'
 import SubtitleSearchModal from '../components/SubtitleSearchModal'
+import AddToCollectionModal from '../components/AddToCollectionModal'
+import PersonModal from '../components/PersonModal'
 import Tooltip from '../components/Tooltip'
+import { proxyImageUrl } from '../lib/proxy'
+import { aggregateCrew } from '../features/shared/utils'
 
 interface MovieDoc {
   id: string
@@ -41,6 +45,8 @@ export default function MovieDetailPage() {
   const [embyLoading, setEmbyLoading] = useState(false)
   const [showTMDBModal, setShowTMDBModal] = useState(false)
   const [showSubtitleModal, setShowSubtitleModal] = useState(false)
+  const [showCollectionModal, setShowCollectionModal] = useState(false)
+  const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null)
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -179,7 +185,7 @@ export default function MovieDetailPage() {
             {/* Left: Thumbnail */}
             {tmdbData?.poster_url || doc.logo ? (
               <img
-                src={tmdbData?.poster_url || doc.logo}
+                src={tmdbData?.poster_url || proxyImageUrl(doc.logo)}
                 alt={doc.movie_name || doc.name}
                 className="hidden lg:block w-[350px] h-[490px] rounded-lg object-cover bg-gray-800 flex-shrink-0"
               />
@@ -334,6 +340,18 @@ export default function MovieDetailPage() {
                     </button>
                   </Tooltip>
 
+                  {/* Add to Collection */}
+                  <Tooltip content="Add to Collection">
+                    <button
+                      onClick={() => setShowCollectionModal(true)}
+                      className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                      </svg>
+                    </button>
+                  </Tooltip>
+
                   {/* More dropdown */}
                   <MenuDropdown
                     trigger={
@@ -422,7 +440,8 @@ export default function MovieDetailPage() {
                       {tmdbData.cast.slice(0, 16).map((actor) => (
                         <div
                           key={actor.id}
-                          className="relative w-28 sm:w-32 h-40 sm:h-44 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0 group"
+                          onClick={() => setSelectedPersonId(actor.id)}
+                          className="relative w-28 sm:w-32 h-40 sm:h-44 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0 group cursor-pointer hover:brightness-90 transition"
                         >
                           {actor.profile_url ? (
                             <img
@@ -443,6 +462,41 @@ export default function MovieDetailPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Crew */}
+                {tmdbData.crew && tmdbData.crew.length > 0 && (
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-300 mb-2">Crew</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      {aggregateCrew(tmdbData.crew)
+                        .slice(0, 40)
+                        .map((member) => (
+                          <div
+                            key={member.id}
+                            onClick={() => setSelectedPersonId(member.id)}
+                            className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-700/50 transition"
+                          >
+                            {member.profile_url ? (
+                              <img
+                                src={member.profile_url}
+                                alt={member.name}
+                                className="w-9 h-9 rounded-full object-cover flex-shrink-0 bg-gray-700"
+                                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-gray-500 text-sm font-bold flex-shrink-0">
+                                {member.name.charAt(0)}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs text-white font-medium truncate">{member.name}</p>
+                              <p className="text-[11px] text-gray-400 truncate">{member.jobs.join(', ')}</p>
+                            </div>
+                          </div>
+                        ))}
                     </div>
                   </div>
                 )}
@@ -489,6 +543,20 @@ export default function MovieDetailPage() {
                 docId={id!}
                 tmdbId={tmdbData.tmdb_id}
                 onClose={() => setShowSubtitleModal(false)}
+              />
+            )}
+
+            {showCollectionModal && id && (
+              <AddToCollectionModal
+                docId={id}
+                type="movies"
+                onClose={() => setShowCollectionModal(false)}
+              />
+            )}
+            {selectedPersonId && (
+              <PersonModal
+                personId={selectedPersonId}
+                onClose={() => setSelectedPersonId(null)}
               />
             )}
           </div>

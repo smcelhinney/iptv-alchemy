@@ -424,3 +424,122 @@ def fetch_and_store_series(doc_id: str, tmdb_id: int) -> dict | None:
 
     store_series_metadata(doc_id, blob)
     return blob
+
+
+# ---------------------------------------------------------------------------
+# Person helpers
+# ---------------------------------------------------------------------------
+
+_PERSON_PREFIX = "person:"
+_PERSON_TTL = 15552000  # 6 months
+
+
+def get_person_details(person_id: int) -> dict | None:
+    """Fetch TMDB person details."""
+    token = _get_tmdb_token()
+    if not token:
+        return None
+    try:
+        resp = http_requests.get(
+            f"https://api.themoviedb.org/3/person/{person_id}",
+            headers=_tmdb_headers(),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except http_requests.RequestException as e:
+        logger.warning("TMDB person details failed for %s: %s", person_id, e)
+        return None
+
+
+def get_person_combined_credits(person_id: int) -> dict | None:
+    """Fetch TMDB person combined movie/TV credits."""
+    token = _get_tmdb_token()
+    if not token:
+        return None
+    try:
+        resp = http_requests.get(
+            f"https://api.themoviedb.org/3/person/{person_id}/combined_credits",
+            headers=_tmdb_headers(),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except http_requests.RequestException as e:
+        logger.warning("TMDB person credits failed for %s: %s", person_id, e)
+        return None
+
+
+def _credit_date(credit: dict) -> str:
+    if credit.get("media_type") == "movie":
+        return credit.get("release_date") or ""
+    return credit.get("first_air_date") or ""
+
+
+def get_person(person_id: int) -> dict | None:
+    """Return aggregated person details + credits, using Redis cache."""
+    client = _get_redis_client()
+    if client is not None:
+        try:
+            raw = client.get(f"{_PERSON_PREFIX}{person_id}")
+            if raw:
+                return json.loads(raw)
+        except Exception as e:
+            logger.warning("Failed to read person cache: %s", e)
+
+    details = get_person_details(person_id)
+    if details is None:
+        return None
+
+    credits_raw = get_person_combined_credits(person_id) or {}
+
+    cast_credits = [
+        {
+            "id": c.get("id"),
+            "title": c.get("title") or c.get("name") or "Unknown",
+            "media_type": c.get("media_type"),
+            "date": _credit_date(c),
+            "year": (_credit_date(c) or "").split("-")[0] or None,
+            "character": c.get("character") or "",
+            "job": "",
+            "poster_url": build_image_url(c.get("poster_path"), "w185"),
+        }
+        for c in credits_raw.get("cast", [])
+    ]
+    crew_credits = [
+        {
+            "id": c.get("id"),
+            "title": c.get("title") or c.get("name") or "Unknown",
+            "media_type": c.get("media_type"),
+            "date": _credit_date(c),
+            "year": (_credit_date(c) or "").split("-")[0] or None,
+            "character": "",
+            "job": c.get("job") or "",
+            "poster_url": build_image_url(c.get("poster_path"), "w185"),
+        }
+        for c in credits_raw.get("crew", [])
+    ]
+
+    all_credits = cast_credits + crew_credits
+    all_credits.sort(key=lambda c: c.get("date") or "", reverse=True)
+    all_credits = all_credits[:50]
+
+    blob = {
+        "id": details.get("id"),
+        "name": details.get("name"),
+        "biography": details.get("biography") or "",
+        "birthday": details.get("birthday") or "",
+        "deathday": details.get("deathday") or "",
+        "place_of_birth": details.get("place_of_birth") or "",
+        "known_for_department": details.get("known_for_department") or "",
+        "profile_url": build_image_url(details.get("profile_path"), "w500"),
+        "credits": all_credits,
+    }
+
+    if client is not None:
+        try:
+            client.setex(f"{_PERSON_PREFIX}{person_id}", _PERSON_TTL, json.dumps(blob))
+        except Exception as e:
+            logger.warning("Failed to cache person: %s", e)
+
+    return blob

@@ -47,12 +47,20 @@ export default function TVPlayer() {
 
       switch (e.key) {
         case 'ArrowLeft':
-          e.preventDefault()
-          if (videoEl) videoEl.currentTime = Math.max(0, videoEl.currentTime - 10)
-          break
         case 'ArrowRight':
+          // Seeking is only meaningful for VOD; live streams are played at the live edge
+          if (contentType !== 'vod') {
+            e.preventDefault()
+            return
+          }
           e.preventDefault()
-          if (videoEl) videoEl.currentTime = videoEl.currentTime + 10
+          if (videoEl) {
+            if (e.key === 'ArrowLeft') {
+              videoEl.currentTime = Math.max(0, videoEl.currentTime - 10)
+            } else {
+              videoEl.currentTime = videoEl.currentTime + 10
+            }
+          }
           break
         case 'ArrowUp':
           e.preventDefault()
@@ -111,7 +119,15 @@ export default function TVPlayer() {
       >
         {/* Title bar */}
         <div className="absolute top-0 left-0 right-0 px-8 py-6 bg-gradient-to-b from-black/60 to-transparent">
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-white">{title}</h2>
+            {contentType === 'live' && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-600 text-white text-xs font-semibold uppercase tracking-wide">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                Live
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Bottom controls */}

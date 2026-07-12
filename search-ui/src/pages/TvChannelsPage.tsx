@@ -4,13 +4,14 @@ import { useQueries } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
 import type { Hit } from '../types'
-import { LibrarySidebar, SortSection, SortButton } from './LibraryLayout'
+import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortButton } from './LibraryLayout'
 import type { TvChannelsContext } from './TvChannelsGrid'
 
 type TvSort = 'alpha' | 'added'
 
 export default function TvChannelsPage() {
   const [sort, setSort] = useState<TvSort>('alpha')
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const basePath = '/library/tv-channels'
   const collectionsPath = '/library/tv-channels/collections'
   const { data: library } = useLibrary()
@@ -60,14 +61,15 @@ export default function TvChannelsPage() {
 
   return (
     <>
-      <LibrarySidebar>
+      <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton to={basePath} active={sort === 'alpha'} onClick={() => setSort('alpha')} label="Alphabetically" />
-          <SortButton to={basePath} active={sort === 'added'} onClick={() => setSort('added')} label="Added" />
+          <SortButton to={basePath} active={sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
+          <SortButton to={basePath} active={sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Added" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink
           to={collectionsPath}
+          onClick={() => setDrawerOpen(false)}
           className={({ isActive }: { isActive: boolean }) =>
             `w-full text-left px-3 py-2 rounded-lg text-sm transition-colors block ${
               isActive
@@ -78,8 +80,9 @@ export default function TvChannelsPage() {
         >
           Collections
         </NavLink>
-      </LibrarySidebar>
+      </LibraryDrawer>
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <LibraryDrawerToggle onClick={() => setDrawerOpen(true)} label="Sort & Collections" />
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <Outlet context={contextValue} />
         </div>

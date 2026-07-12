@@ -219,7 +219,15 @@ export default function FloatingPlayer() {
         className="flex items-center justify-between px-3 py-1.5 bg-gray-800 cursor-move select-none flex-shrink-0"
         onMouseDown={onDragMouseDown}
       >
-        <span className="text-white text-sm font-medium truncate max-w-[80%]">{title}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-white text-sm font-medium truncate">{title}</span>
+          {contentType === 'live' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-semibold uppercase tracking-wide flex-shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              Live
+            </span>
+          )}
+        </div>
         <button
           onClick={closePlayer}
           className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"

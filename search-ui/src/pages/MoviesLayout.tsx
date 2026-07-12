@@ -5,7 +5,7 @@ import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
 import { usePlaybackMemory, useDeletePlaybackMemory, useLastPlayed } from '../hooks/usePlaybackMemory'
 import type { Hit } from '../types'
-import { LibrarySidebar, SortSection, SortButton } from './LibraryLayout'
+import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortButton } from './LibraryLayout'
 
 type MovieSort = 'alpha' | 'added' | 'recent'
 
@@ -18,6 +18,7 @@ export interface MoviesContext {
 
 export default function MoviesLayout() {
   const [sort, setSort] = useState<MovieSort>('alpha')
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const location = useLocation()
   const onCollections = location.pathname.includes('/collections')
   const basePath = '/library/movies'
@@ -72,15 +73,16 @@ export default function MoviesLayout() {
 
   return (
     <>
-      <LibrarySidebar>
+      <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton to={basePath} active={!onCollections && sort === 'alpha'} onClick={() => setSort('alpha')} label="Alphabetically" />
-          <SortButton to={basePath} active={!onCollections && sort === 'added'} onClick={() => setSort('added')} label="Date Added" />
-          <SortButton to={basePath} active={!onCollections && sort === 'recent'} onClick={() => setSort('recent')} label="Recently Played" />
+          <SortButton to={basePath} active={!onCollections && sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
+          <SortButton to={basePath} active={!onCollections && sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Date Added" />
+          <SortButton to={basePath} active={!onCollections && sort === 'recent'} onClick={() => { setSort('recent'); setDrawerOpen(false) }} label="Recently Played" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink
           to="/library/movies/collections"
+          onClick={() => setDrawerOpen(false)}
           className={({ isActive }: { isActive: boolean }) =>
             `w-full text-left px-3 py-2 rounded-lg text-sm transition-colors block ${
               isActive
@@ -91,8 +93,9 @@ export default function MoviesLayout() {
         >
           Collections
         </NavLink>
-      </LibrarySidebar>
+      </LibraryDrawer>
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <LibraryDrawerToggle onClick={() => setDrawerOpen(true)} label="Sort & Collections" />
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <Outlet context={{ sortedIds, removeFromLib, clearProgress, playbackMemory } satisfies MoviesContext} />
         </div>

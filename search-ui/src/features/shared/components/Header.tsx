@@ -52,7 +52,7 @@ export default function Header() {
             <path d="M10 3v5l-4 11a2 2 0 002 2h8a2 2 0 002-2l-4-11V3" />
           </svg>
         </div>
-        <span className="text-lg font-bold">iptv-alchemy</span>
+        <span className="hidden sm:inline text-lg font-bold">iptv-alchemy</span>
       </NavLink>
       <nav className="flex items-center gap-1">
         <NavLink

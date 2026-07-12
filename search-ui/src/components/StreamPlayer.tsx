@@ -139,8 +139,8 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
           autoCleanupMaxBackwardDuration: 30,
           autoCleanupMinBackwardDuration: 10,
           liveBufferLatencyChasing: true,
-          liveBufferLatencyMaxLatency: 15,  // catch up if >15s behind live edge
-          liveBufferLatencyMinRemain: 5,    // keep at least 5s when chasing
+          liveBufferLatencyMaxLatency: 10,  // catch up if >10s behind live edge
+          liveBufferLatencyMinRemain: 4,    // keep at least 4s buffered when chasing
           liveBufferLatencyChasingOnPaused: false,
         },
       )
@@ -254,7 +254,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
         id={styleId}
         ref={videoRef}
         className="w-full h-full bg-black"
-        controls
+        controls={contentType === 'vod'}
         autoPlay
         playsInline
         muted={false}

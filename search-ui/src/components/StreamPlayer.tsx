@@ -254,7 +254,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
         id={styleId}
         ref={videoRef}
         className="w-full h-full bg-black"
-        controls={contentType === 'vod'}
+        controls
         autoPlay
         playsInline
         muted={false}

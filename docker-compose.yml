@@ -75,6 +75,21 @@ services:
       - default
       - proxy
 
+  iptv-mcp:
+    build:
+      context: ./iptv/mcp
+      dockerfile: Dockerfile
+    container_name: iptv-mcp
+    env_file: .env
+    environment:
+      - API_BASE_URL=http://iptv-api:5555
+      - IPTV_MCP_API_KEY=${IPTV_MCP_API_KEY:-}
+    depends_on:
+      - iptv-api
+    restart: unless-stopped
+    networks:
+      - default
+
 networks:
   default:
   proxy:

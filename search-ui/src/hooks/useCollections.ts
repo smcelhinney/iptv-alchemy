@@ -10,6 +10,8 @@ import {
   fetchDocCollections,
 } from '../lib/api/collection-service'
 
+export { fetchDocCollections }
+
 export function useCollections(type: CollectionType) {
   return useQuery({
     queryKey: ['collections', type],

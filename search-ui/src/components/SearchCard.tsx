@@ -22,6 +22,9 @@ interface SearchCardProps {
   resumeDuration?: number
   to?: string
   onClearProgress?: () => void
+  selectable?: boolean
+  selected?: boolean
+  onToggleSelect?: () => void
 }
 
 function useIsInLibrary(hit: HitType): boolean {
@@ -32,7 +35,7 @@ function useIsInLibrary(hit: HitType): boolean {
   return false
 }
 
-export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime, resumeDuration, to, onClearProgress }: SearchCardProps) {
+export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime, resumeDuration, to, onClearProgress, selectable, selected, onToggleSelect }: SearchCardProps) {
   const listing = isListingHit(hit)
   const contentHit = hit as HitType
   const isMovie = !listing && hit.type === 'movie'
@@ -93,6 +96,10 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
   }
 
   const handleCardClick = () => {
+    if (selectable) {
+      onToggleSelect?.()
+      return
+    }
     if (to) {
       navigate(to)
     } else {
@@ -119,9 +126,28 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
       <div
         ref={tvMode ? cardRef : undefined}
         className="group w-full h-28 max-w-full bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors flex cursor-pointer"
-        onClick={handleCardClick}
-      >
-        {/* Image area */}
+      onClick={handleCardClick}
+    >
+      {/* Selection checkbox */}
+      {selectable && (
+        <div className="flex-shrink-0 w-10 flex items-center justify-center bg-gray-800 border-r border-gray-700">
+          <div
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+              selected
+                ? 'bg-blue-600 border-blue-600'
+                : 'border-gray-500 group-hover:border-gray-400'
+            }`}
+          >
+            {selected && (
+              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Image area */}
         <div className="w-32 flex-shrink-0 bg-gray-900 relative overflow-hidden">
           {imageSrc ? (
             <img
@@ -145,8 +171,8 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
             </div>
           )}
 
-          {/* CTA bar - always visible on TV, hover-only on desktop */}
-          {!to && (
+      {/* CTA bar - always visible on TV, hover-only on desktop; hidden in select mode */}
+      {!to && !selectable && (
             <div className={`absolute bottom-0 left-0 right-0 flex items-center justify-center gap-1.5 py-1.5 bg-black/60 transition-opacity ${
               tvMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
             }`}>
@@ -227,7 +253,7 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
             {getTitle()}
           </h3>
 
-          {!listing && resumeTime !== undefined && (isMovie || isSeries) && (
+          {!selectable && !listing && resumeTime !== undefined && (isMovie || isSeries) && (
             <div className="mt-1 flex items-center gap-2">
               <div className="flex-1">
                 <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">

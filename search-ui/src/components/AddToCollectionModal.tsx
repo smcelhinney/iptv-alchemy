@@ -1,19 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import type { CollectionType } from '../lib/api/collection-service'
-import { useCollections, useCreateCollection, useAddToCollection, useRemoveFromCollection, useDocCollections } from '../hooks/useCollections'
+import { useCollections, useCreateCollection, useAddToCollection, fetchDocCollections } from '../hooks/useCollections'
 
 interface AddToCollectionModalProps {
-  docId: string
+  docId: string | string[]
   type: CollectionType
   onClose: () => void
 }
 
 export default function AddToCollectionModal({ docId, type, onClose }: AddToCollectionModalProps) {
+  const docIds = useMemo(() => Array.isArray(docId) ? docId : [docId], [docId])
   const { data: collections } = useCollections(type)
-  const { data: docColIds } = useDocCollections(docId)
+  const docCollectionsResults = useQueries({
+    queries: docIds.map((id) => ({
+      queryKey: ['doc-collections', id],
+      queryFn: () => fetchDocCollections(id),
+      enabled: !!id,
+    })),
+  })
   const createMut = useCreateCollection(type)
   const addMut = useAddToCollection()
-  const removeMut = useRemoveFromCollection()
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
 
@@ -27,13 +34,31 @@ export default function AddToCollectionModal({ docId, type, onClose }: AddToColl
     }
   }, [onClose])
 
-  const inCollection = new Set(docColIds ?? [])
+  const docCollectionsMap = useMemo(() => {
+    const map = new Map<string, Set<string>>()
+    docIds.forEach((id, index) => {
+      const data = docCollectionsResults[index]?.data
+      map.set(id, new Set(Array.isArray(data) ? data : []))
+    })
+    return map
+  }, [docIds, docCollectionsResults])
 
-  const handleToggle = (colId: string) => {
-    if (inCollection.has(colId)) {
-      removeMut.mutate({ colId, docId })
-    } else {
-      addMut.mutate({ colId, docId })
+  const inAllCollections = useMemo(() => {
+    const sets = Array.from(docCollectionsMap.values())
+    if (sets.length === 0) return new Set<string>()
+    const all = new Set<string>()
+    sets[0].forEach((colId) => {
+      if (sets.every((s) => s.has(colId))) {
+        all.add(colId)
+      }
+    })
+    return all
+  }, [docCollectionsMap])
+
+  const handleAdd = (colId: string) => {
+    const missing = docIds.filter((id) => !docCollectionsMap.get(id)?.has(colId))
+    for (const id of missing) {
+      addMut.mutate({ colId, docId: id })
     }
   }
 
@@ -42,7 +67,9 @@ export default function AddToCollectionModal({ docId, type, onClose }: AddToColl
     if (!trimmed) return
     createMut.mutate(trimmed, {
       onSuccess: (col) => {
-        addMut.mutate({ colId: col.id, docId })
+        for (const id of docIds) {
+          addMut.mutate({ colId: col.id, docId: id })
+        }
         setNewName('')
         setShowCreate(false)
       },
@@ -78,11 +105,11 @@ export default function AddToCollectionModal({ docId, type, onClose }: AddToColl
           )}
 
           {collections?.map((col) => {
-            const checked = inCollection.has(col.id)
+            const checked = inAllCollections.has(col.id)
             return (
               <button
                 key={col.id}
-                onClick={() => handleToggle(col.id)}
+                onClick={() => handleAdd(col.id)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-colors ${
                   checked
                     ? 'bg-blue-600/20 border-blue-600 text-white'

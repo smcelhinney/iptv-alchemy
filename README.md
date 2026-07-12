@@ -98,7 +98,7 @@ useful — you need a server URL, username and password from your provider.
    docker compose up -d --build
    ```
 
-   This starts four services:
+   This starts five services:
 
    | Service | Port | Purpose |
    | --- | --- | --- |
@@ -106,6 +106,7 @@ useful — you need a server URL, username and password from your provider.
    | `iptv-redis` | — | Config, categories & user settings |
    | `iptv-api` | 5555 | Flask REST API + processor |
    | `iptv-search-ui` | 80 | React UI served by nginx |
+   | `iptv-mcp` | 8000 | MCP server (SSE) for AI tool integration |
 
 5. **Open the UI and finish onboarding**
 
@@ -113,6 +114,89 @@ useful — you need a server URL, username and password from your provider.
    The first-run wizard will guide you through validating your Xtream
    credentials, choosing output directories, selecting categories and running
    the initial download + index.
+
+---
+
+## MCP server (AI tool integration)
+
+The stack includes a [FastMCP](https://github.com/jlowin/fastmcp) server that
+exposes your IPTV library as tools for AI coding assistants like
+[Opencode](https://opencode.ai). It runs as a Docker service and is proxied
+through nginx at `https://<your-host>/mcp`.
+
+### Available tools
+
+| Tool | Description |
+| --- | --- |
+| `search_indexes(query)` | Search movies, series, and TV listings |
+| `add_to_library(content_type, doc_id)` | Add a movie, series, or TV channel to your library |
+| `add_to_collection(collection_id, doc_id)` | Add a document to a collection |
+| `find_collection_by_name(name)` | Look up a collection by name |
+| `get_library_entry(doc_id)` | Check if a document is in the library |
+| `add_metadata_to_movie(movieId)` | Search TMDB and attach metadata to a movie |
+| `get_movie_metadata(id)` | Fetch stored TMDB metadata for a movie |
+| `add_metadata_to_series(seriesId)` | Search TMDB and attach metadata to a series |
+| `get_series_metadata(id)` | Fetch stored TMDB metadata for a series |
+
+### 1. Generate an API key
+
+```bash
+openssl rand -hex 32
+```
+
+### 2. Set the key in `.env`
+
+Add the generated key to your `.env` file:
+
+```env
+IPTV_MCP_API_KEY=<your-generated-key>
+```
+
+Then restart the MCP container:
+
+```bash
+docker compose up -d iptv-mcp
+```
+
+### 3. Configure your AI assistant
+
+Add the MCP server to your Opencode config (`~/.config/opencode/opencode.jsonc`):
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "iptv": {
+      "type": "remote",
+      "enabled": true,
+      "url": "https://<your-host>/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:IPTV_MCP_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+Restart Opencode after saving the config. The IPTV tools will appear in your
+available tool list.
+
+### Verifying the connection
+
+From inside the Docker network:
+
+```bash
+docker exec iptv-mcp python -c "
+import server
+print(server.find_collection_by_name('MCU'))
+"
+```
+
+Or via the public endpoint:
+
+```bash
+curl -H "Authorization: Bearer $IPTV_MCP_API_KEY" https://<your-host>/mcp
+```
 
 ---
 
@@ -198,11 +282,14 @@ in the UI — override them via `PUT /api/config` if needed.
 ├── iptv/                 # Python package: processor, API, indexers
 │   ├── main.py           # CLI entrypoint + orchestrator
 │   ├── api.py            # Flask REST API
+│   ├── mcp/              # FastMCP server (search, library, collection tools)
+│   │   ├── server.py
+│   │   └── Dockerfile
 │   ├── Dockerfile        # API container image
 │   └── ...
 ├── search-ui/            # React + Vite + InstantSearch front-end
 │   └── Dockerfile
-├── docker-compose.yml    # Meilisearch + Redis + API + UI
+├── docker-compose.yml    # Meilisearch + Redis + API + UI + MCP
 ├── requirements.txt
 └── .env.example          # Copy to .env and fill in
 ```

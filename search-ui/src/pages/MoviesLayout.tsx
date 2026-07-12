@@ -17,7 +17,7 @@ export interface MoviesContext {
 }
 
 export default function MoviesLayout() {
-  const [sort, setSort] = useState<MovieSort>('alpha')
+  const [sort, setSort] = useState<MovieSort>('recent')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const location = useLocation()
   const onCollections = location.pathname.includes('/collections')
@@ -75,9 +75,9 @@ export default function MoviesLayout() {
     <>
       <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton to={basePath} active={!onCollections && sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
-          <SortButton to={basePath} active={!onCollections && sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Date Added" />
           <SortButton to={basePath} active={!onCollections && sort === 'recent'} onClick={() => { setSort('recent'); setDrawerOpen(false) }} label="Recently Played" />
+          <SortButton to={basePath} active={!onCollections && sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Date Added" />
+          <SortButton to={basePath} active={!onCollections && sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink

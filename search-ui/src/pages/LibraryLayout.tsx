@@ -101,10 +101,9 @@ export function SortSection({ children }: { children: ReactNode }) {
   )
 }
 
-export function SortButton({ to, active, onClick, label }: { to: string; active: boolean; onClick: () => void; label: string }) {
+export function SortButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
-    <NavLink
-      to={to}
+    <button
       onClick={onClick}
       className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
         active
@@ -113,7 +112,7 @@ export function SortButton({ to, active, onClick, label }: { to: string; active:
       }`}
     >
       {label}
-    </NavLink>
+    </button>
   )
 }
 

@@ -160,6 +160,29 @@ def get_library_entry(doc_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
+def get_library() -> list[dict[str, Any]]:
+    """List all items currently in the user's library.
+
+    Returns:
+        List of objects with 'name' (entry title) and 'type' (movie, series, or tv_channel).
+    """
+    url = f"{API_BASE_URL}/api/library/expanded"
+    logger.info("get_library")
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    library = resp.json()
+
+    TYPE_MAP = {"movies": "movie", "series": "series", "tv_channels": "tv_channel"}
+    results = []
+    for content_type, docs in library.items():
+        type_label = TYPE_MAP.get(content_type, content_type)
+        for doc in docs:
+            name = doc.get("series_name") or doc.get("name") or doc.get("title") or "Unknown"
+            results.append({"name": name, "type": type_label})
+    return results
+
+
+@mcp.tool()
 def add_metadata_to_movie(movieId: str) -> dict[str, Any]:
     """Search TMDB for a movie and attach the first search result's metadata.
 

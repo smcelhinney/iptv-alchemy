@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useSearchParams } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
@@ -10,9 +10,13 @@ import type { TvChannelsContext } from './TvChannelsGrid'
 type TvSort = 'alpha' | 'added'
 
 export default function TvChannelsPage() {
-  const [sort, setSort] = useState<TvSort>('alpha')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const sort = (searchParams.get('sort') as TvSort) || 'alpha'
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const basePath = '/library/tv-channels'
+
+  const setSort = (newSort: TvSort) => {
+    setSearchParams((prev) => { prev.set('sort', newSort); return prev }, { replace: true })
+  }
   const collectionsPath = '/library/tv-channels/collections'
   const { data: library } = useLibrary()
   const ids = library?.tv_channels ?? []
@@ -56,6 +60,7 @@ export default function TvChannelsPage() {
 
   const contextValue: TvChannelsContext = {
     sortedIds,
+    nameMap,
     removeFromLib: (id: string) => removeFromLib.mutate({ type: 'tv_channels', id }),
   }
 
@@ -63,12 +68,12 @@ export default function TvChannelsPage() {
     <>
       <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton to={basePath} active={sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
-          <SortButton to={basePath} active={sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Added" />
+          <SortButton active={sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
+          <SortButton active={sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Added" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink
-          to={collectionsPath}
+          to={{ pathname: collectionsPath, search: '' }}
           onClick={() => setDrawerOpen(false)}
           className={({ isActive }: { isActive: boolean }) =>
             `w-full text-left px-3 py-2 rounded-lg text-sm transition-colors block ${

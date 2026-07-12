@@ -78,6 +78,9 @@ def remove_from_library(type_str: str, doc_id: str) -> None:
         client.delete(f"playback:memory:{doc_id}")
         client.hdel(_ADDED_KEY, doc_id)
         client.hdel("playback:last_played", doc_id)
+
+        for col_id in get_doc_collections(doc_id):
+            remove_from_collection(col_id, doc_id)
     except Exception as e:
         logger.warning("Failed to remove from library: %s", e)
 

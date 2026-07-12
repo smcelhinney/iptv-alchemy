@@ -236,9 +236,20 @@ class MeilisearchIndexer:
                     series_logo = ep['logo']
                     break
 
+            # Deduplicate episodes by (season, episode) - IPTV sources often
+            # have multiple entries for the same episode (different bitrates/quality)
+            seen = set()
+            unique_episodes = []
+            for ep in episodes:
+                key = (ep.get('season'), ep.get('episode'))
+                if key in seen:
+                    continue
+                seen.add(key)
+                unique_episodes.append(ep)
+
             # Build episodes array
             episodes_array = []
-            for ep in episodes:
+            for ep in unique_episodes:
                 episodes_array.append({
                     'id': self._generate_id(ep),
                     'name': ep.get('name', ''),
@@ -254,7 +265,7 @@ class MeilisearchIndexer:
             doc_id = hashlib.sha256(series_name.encode()).hexdigest()[:16]
 
             # Pick category from first episode
-            category = episodes[0].get('category', '') if episodes else ''
+            category = unique_episodes[0].get('category', '') if unique_episodes else ''
 
             documents.append({
                 'id': doc_id,

@@ -5,6 +5,8 @@ interface LibraryGridToolbarProps {
   onCancel: () => void
   onDelete: () => void
   onAddToCollection: () => void
+  filter?: string
+  onFilterChange?: (value: string) => void
 }
 
 export default function LibraryGridToolbar({
@@ -14,9 +16,21 @@ export default function LibraryGridToolbar({
   onCancel,
   onDelete,
   onAddToCollection,
+  filter,
+  onFilterChange,
 }: LibraryGridToolbarProps) {
   return (
-    <div className="flex items-center justify-end gap-2 mb-4">
+    <div className="flex items-center gap-2 mb-4">
+      {onFilterChange && (
+        <input
+          type="text"
+          value={filter ?? ''}
+          onChange={(e) => onFilterChange(e.target.value)}
+          placeholder="Filter…"
+          className="flex-1 max-w-xs px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+        />
+      )}
+      <div className="flex-1" />
       {!isSelecting ? (
         <button
           onClick={onStartSelect}

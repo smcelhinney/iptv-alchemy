@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import type { Hit } from '../types'
@@ -9,10 +9,26 @@ import AddToCollectionModal from '../components/AddToCollectionModal'
 import type { MoviesContext } from './MoviesLayout'
 
 export default function MoviesGrid() {
-  const { sortedIds, removeFromLib, clearProgress, playbackMemory } = useOutletContext<MoviesContext>()
+  const { sortedIds, nameMap, removeFromLib, clearProgress, playbackMemory } = useOutletContext<MoviesContext>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showCollectionModal, setShowCollectionModal] = useState(false)
+  const filter = searchParams.get('search') || ''
+
+  const setFilter = (value: string) => {
+    setSearchParams((prev) => {
+      if (value) prev.set('search', value)
+      else prev.delete('search')
+      return prev
+    }, { replace: true })
+  }
+
+  const filteredIds = useMemo(() => {
+    if (!filter) return sortedIds
+    const q = filter.toLowerCase()
+    return sortedIds.filter((id) => (nameMap[id] ?? id).toLowerCase().includes(q))
+  }, [sortedIds, filter, nameMap])
 
   useEffect(() => {
     if (!isSelecting) return
@@ -59,9 +75,11 @@ export default function MoviesGrid() {
         }}
         onDelete={handleDelete}
         onAddToCollection={() => setShowCollectionModal(true)}
+        filter={filter}
+        onFilterChange={setFilter}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {sortedIds.map((id: string) => {
+        {filteredIds.map((id: string) => {
           const mem = playbackMemory?.[id]
           return (
             <MovieCard

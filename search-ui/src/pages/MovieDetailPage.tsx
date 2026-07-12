@@ -167,7 +167,7 @@ export default function MovieDetailPage() {
       {/* Content */}
       <div className={`relative z-10 px-6 pb-6 ${tmdbData?.backdrop_url ? '-mt-[28rem] pt-[30px]' : 'pt-[30px]'}`}>
         <button
-          onClick={() => navigate('/library/movies')}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-4"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

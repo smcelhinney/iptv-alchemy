@@ -1808,7 +1808,8 @@ def api_populate_tv():
     if not bypass:
         cached = _get_popular_from_cache('tv', page)
         if cached is not None:
-            return jsonify({'items': cached, 'page': page, 'from_cache': True})
+            items, total_pages = cached
+            return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': True})
 
     try:
         resp = http_requests.get(
@@ -1829,6 +1830,42 @@ def api_populate_tv():
     except http_requests.RequestException as e:
         logger.error("TMDB populate TV request failed: %s", e)
         return jsonify({'error': 'Failed to fetch popular TV series'}), 502
+
+
+@app.route('/api/populate/clear', methods=['POST', 'OPTIONS'])
+def api_populate_clear():
+    """Flush popular cache for a given type.
+
+    Body fields:
+      type (str): 'movie' or 'tv'.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+    body = request.get_json(silent=True) or {}
+    content_type = body.get('type')
+    if content_type not in ('movie', 'tv'):
+        return jsonify({'error': 'type must be \"movie\" or \"tv\"'}), 400
+
+    from .redis_client import get_redis_client
+    client = get_redis_client()
+    if client is None:
+        return jsonify({'cleared': False, 'error': 'Redis not available'}), 503
+
+    try:
+        pattern = f'{POPULAR_CACHE_PREFIX}{content_type}:page:*'
+        cursor = 0
+        deleted = 0
+        while True:
+            cursor, keys = client.scan(cursor=cursor, match=pattern, count=100)
+            if keys:
+                deleted += client.delete(*keys)
+            if cursor == 0:
+                break
+        logger.info("Cleared %d popular %s cache keys matching %s", deleted, content_type, pattern)
+        return jsonify({'cleared': True, 'deleted': deleted})
+    except Exception as e:
+        logger.error("Failed to clear popular cache: %s", e)
+        return jsonify({'error': 'Failed to clear cache'}), 500
 
 
 # Subtitles routes

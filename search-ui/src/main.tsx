@@ -9,7 +9,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // Register service worker for PWA offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
+    navigator.serviceWorker.register('/sw.js?v=4').then(
       (reg) => console.log('[SW] registered, scope:', reg.scope),
       (err) => console.warn('[SW] registration failed:', err),
     )

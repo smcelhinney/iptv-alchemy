@@ -50,3 +50,7 @@ export async function fetchPopularTvPage(page = 1, bypassCache = false): Promise
   const { data } = await apiClient.post<PopularPageResponse>('/populate/tv', { page, bypass_cache: bypassCache })
   return data
 }
+
+export async function clearPopularCache(type: 'movie' | 'tv'): Promise<void> {
+  await apiClient.post('/populate/clear', { type })
+}

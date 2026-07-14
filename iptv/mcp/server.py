@@ -310,6 +310,56 @@ def get_series_metadata(id: str) -> dict[str, Any]:
     return resp.json()
 
 
+@mcp.tool()
+def get_director_films(query: str) -> dict[str, Any]:
+    """Search TMDB for a director by name and return their top 10 directed films.
+
+    Args:
+        query: Director name to search for (e.g. 'christopher nolan').
+
+    Returns:
+        Director info and a list of up to 10 films they directed.
+    """
+    # Search for the person
+    search_url = f"{API_BASE_URL}/api/tmdb/search/person"
+    logger.info("get_director_films: searching for '%s'", query)
+    search_resp = requests.get(search_url, params={"q": query}, timeout=30)
+    search_resp.raise_for_status()
+    results = search_resp.json().get("results", [])
+
+    if not results:
+        return {"error": f"No person found for '{query}'"}
+
+    person = results[0]
+    person_id = person.get("id")
+    if not person_id:
+        return {"error": "First result missing person ID"}
+
+    # Get their combined credits
+    person_url = f"{API_BASE_URL}/api/person/{person_id}"
+    logger.info("get_director_films: fetching credits for person %s", person_id)
+    person_resp = requests.get(person_url, timeout=30)
+    person_resp.raise_for_status()
+    person_data = person_resp.json()
+
+    # Filter to movies where this person was director
+    directed = [
+        c for c in person_data.get("credits", [])
+        if c.get("job") == "Director" and c.get("media_type") == "movie"
+    ]
+    directed = directed[:10]
+
+    return {
+        "person": {
+            "id": person_data.get("id"),
+            "name": person_data.get("name"),
+            "biography": person_data.get("biography", ""),
+            "profile_url": person_data.get("profile_url"),
+        },
+        "films": directed,
+    }
+
+
 class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if IPTV_MCP_API_KEY:

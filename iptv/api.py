@@ -30,7 +30,7 @@ import requests as http_requests
 load_dotenv()
 
 MEILISEARCH_HOST = os.getenv('MEILISEARCH_HOST', 'http://iptv-meilisearch:7700')
-MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_API_KEY', 'iptv-alchemy-default-key')
+MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_KEY', 'iptv-alchemy-default-key')
 MEILISEARCH_INDEX = 'iptv_content'
 
 
@@ -1636,6 +1636,16 @@ def api_tmdb_delete_series_metadata(doc_id: str):
     return jsonify({'status': 'ok'})
 
 
+@app.route('/api/tmdb/search/person', methods=['GET'])
+def api_tmdb_search_person():
+    from .tmdb import search_person
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify({'error': 'q parameter is required'}), 400
+    results = search_person(query)
+    return jsonify({'results': results})
+
+
 @app.route('/api/person/<int:person_id>', methods=['GET'])
 def api_get_person(person_id: int):
     from .tmdb import get_person
@@ -1644,6 +1654,181 @@ def api_get_person(person_id: int):
         return jsonify({'error': 'Failed to fetch person data'}), 502
     return jsonify(data)
 
+
+
+# ---------------------------------------------------------------------------
+# TMDB Populate (popular content for landing page)
+# ---------------------------------------------------------------------------
+
+
+TMDB_BEARER_TOKEN = os.getenv(
+    'TMDB_BEARER_TOKEN',
+    'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2NjBhYmIyNDNlODcxNzNhYzY0OTcwOGU2NWMwNDVmNiIsIm5iZiI6MTc4Mjg1ODczMC45MDMsInN1YiI6IjZhNDQ0M2VhNDAxNTA0NTdhYTI0ZjE2ZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.d_A8p06pEyEynNlON1nnggPma1ylu5Egen2y2MFa-Cc'
+)
+
+
+def _tmdb_headers():
+    return {
+        'Authorization': f'Bearer {TMDB_BEARER_TOKEN}',
+        'accept': 'application/json',
+    }
+
+
+TMDB_BASE = 'https://api.themoviedb.org/3'
+POPULAR_CACHE_PREFIX = 'popular:'
+POPULAR_CACHE_TTL = 3600  # 1 hour
+
+
+def _normalize_movie(m):
+    return {
+        'tmdb_id': m['id'],
+        'title': m['title'],
+        'overview': m.get('overview', ''),
+        'poster_path': m.get('poster_path'),
+        'backdrop_path': m.get('backdrop_path'),
+        'vote_average': m.get('vote_average', 0),
+        'release_date': m.get('release_date', ''),
+        'year': int(m['release_date'][:4]) if m.get('release_date') and len(m['release_date']) >= 4 else None,
+        'type': 'movie',
+    }
+
+
+def _normalize_tv(t):
+    return {
+        'tmdb_id': t['id'],
+        'title': t['name'],
+        'overview': t.get('overview', ''),
+        'poster_path': t.get('poster_path'),
+        'backdrop_path': t.get('backdrop_path'),
+        'vote_average': t.get('vote_average', 0),
+        'release_date': t.get('first_air_date', ''),
+        'year': int(t['first_air_date'][:4]) if t.get('first_air_date') and len(t['first_air_date']) >= 4 else None,
+        'type': 'tv',
+    }
+
+
+def _popular_cache_key(content_type: str, page: int) -> str:
+    return f'{POPULAR_CACHE_PREFIX}{content_type}:page:{page}'
+
+
+def _get_popular_from_cache(content_type: str, page: int):
+    """Return (items, total_pages) tuple or None."""
+    from .redis_client import get_redis_client
+    import json as _json
+    client = get_redis_client()
+    if client is None:
+        return None
+    try:
+        data = client.get(_popular_cache_key(content_type, page))
+        if data is None:
+            return None
+        parsed = _json.loads(data)
+        if isinstance(parsed, list):
+            return parsed, 1
+        return parsed.get('items', []), parsed.get('total_pages', 1)
+    except Exception:
+        return None
+
+
+def _set_popular_cache(content_type: str, page: int, items: list, total_pages: int = 1) -> None:
+    """Store popular results in Redis cache."""
+    from .redis_client import get_redis_client
+    import json as _json
+    client = get_redis_client()
+    if client is None:
+        return
+    try:
+        client.setex(
+            _popular_cache_key(content_type, page),
+            POPULAR_CACHE_TTL,
+            _json.dumps({'items': items, 'total_pages': total_pages}),
+        )
+    except Exception:
+        pass
+
+
+@app.route('/api/populate/movie', methods=['POST', 'OPTIONS'])
+def api_populate_movie():
+    """Return one page of popular movies from TMDB with Redis caching.
+
+    Body fields:
+      page (int): TMDB page number, defaults to 1.
+      bypass_cache (bool): if true, skip Redis and re-fetch from TMDB.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+    body = request.get_json(silent=True) or {}
+    page = int(body.get('page', 1))
+    bypass = bool(body.get('bypass_cache', False))
+
+    if not bypass:
+        cached = _get_popular_from_cache('movie', page)
+        if cached is not None:
+            items, total_pages = cached
+            return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': True})
+
+    try:
+        resp = http_requests.get(
+            f'{TMDB_BASE}/discover/movie',
+            params={
+                'include_adult': 'false',
+                'include_video': 'false',
+                'language': 'en-US',
+                'page': page,
+                'sort_by': 'popularity.desc',
+            },
+            headers=_tmdb_headers(),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        raw = resp.json()
+        items = [_normalize_movie(m) for m in raw.get('results', [])[:10]]
+        total_pages = min(raw.get('total_pages', 1), 500)
+        _set_popular_cache('movie', page, items, total_pages)
+        return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': False})
+    except http_requests.RequestException as e:
+        logger.error("TMDB populate movie request failed: %s", e)
+        return jsonify({'error': 'Failed to fetch popular movies'}), 502
+
+
+@app.route('/api/populate/tv', methods=['POST', 'OPTIONS'])
+def api_populate_tv():
+    """Return one page of popular TV series from TMDB with Redis caching.
+
+    Body fields:
+      page (int): TMDB page number, defaults to 1.
+      bypass_cache (bool): if true, skip Redis and re-fetch from TMDB.
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+    body = request.get_json(silent=True) or {}
+    page = int(body.get('page', 1))
+    bypass = bool(body.get('bypass_cache', False))
+
+    if not bypass:
+        cached = _get_popular_from_cache('tv', page)
+        if cached is not None:
+            return jsonify({'items': cached, 'page': page, 'from_cache': True})
+
+    try:
+        resp = http_requests.get(
+            f'{TMDB_BASE}/tv/popular',
+            params={
+                'language': 'en-US',
+                'page': page,
+            },
+            headers=_tmdb_headers(),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        raw = resp.json()
+        items = [_normalize_tv(t) for t in raw.get('results', [])[:10]]
+        total_pages = min(raw.get('total_pages', 1), 500)
+        _set_popular_cache('tv', page, items, total_pages)
+        return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': False})
+    except http_requests.RequestException as e:
+        logger.error("TMDB populate TV request failed: %s", e)
+        return jsonify({'error': 'Failed to fetch popular TV series'}), 502
 
 
 # Subtitles routes

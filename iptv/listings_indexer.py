@@ -19,7 +19,7 @@ except ImportError:
 load_dotenv()
 
 MEILISEARCH_HOST = os.getenv('MEILISEARCH_HOST', 'http://iptv-meilisearch:7700')
-MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_API_KEY', 'iptv-alchemy-default-key')
+MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_KEY', 'iptv-alchemy-default-key')
 INDEX_NAME = 'iptv_listings'
 
 

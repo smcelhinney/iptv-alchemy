@@ -56,7 +56,8 @@ services:
     container_name: iptv-api
     env_file: .env
     environment:
-      - MEILISEARCH_API_KEY=${MEILISEARCH_KEY:-iptv-alchemy-default-key}
+      - MEILISEARCH_KEY=${MEILISEARCH_KEY:-iptv-alchemy-default-key}
+      - MEILISEARCH_HOST=http://iptv-meilisearch:7700
       - REDIS_URL=redis://iptv-redis:6379/0
     volumes:
       - ./output:/app/output

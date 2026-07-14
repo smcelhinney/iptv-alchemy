@@ -180,6 +180,32 @@ def get_tv_season(tmdb_id: int, season_number: int) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
+# Person search
+# ---------------------------------------------------------------------------
+
+def search_person(query: str) -> list[dict]:
+    token = _get_tmdb_token()
+    if not token:
+        return []
+    try:
+        resp = http_requests.get(
+            "https://api.themoviedb.org/3/search/person",
+            params={"query": query, "include_adult": "false", "language": "en-US", "page": 1},
+            headers=_tmdb_headers(),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        results = data.get("results", [])
+        for r in results:
+            r["_profile_url"] = build_image_url(r.get("profile_path"), "w185")
+        return results
+    except http_requests.RequestException as e:
+        logger.warning("TMDB search_person failed: %s", e)
+        return []
+
+
+# ---------------------------------------------------------------------------
 # Redis-backed metadata store
 # ---------------------------------------------------------------------------
 

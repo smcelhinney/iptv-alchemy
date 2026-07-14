@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { InstantSearch, useSearchBox } from "react-instantsearch";
 import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
@@ -8,6 +8,7 @@ import ContentTypeFilter from "../features/search/components/ContentTypeFilter";
 import ContentTypeFilterButtons from "../features/search/components/ContentTypeFilterButtons";
 import ListingsHits from "../features/search/components/ListingsHits";
 import Hits from "../features/search/components/Hits";
+import PopularHits from "../features/search/components/PopularHits";
 import Pagination from "../features/shared/components/Pagination";
 import DetailModal from "../components/DetailModal";
 import FocusableSection from "../components/FocusableSection";
@@ -21,8 +22,21 @@ const { searchClient } = instantMeiliSearch(
   import.meta.env.VITE_API_KEY,
 );
 
+interface PopularItem {
+  tmdb_id: number
+  title: string
+  overview: string
+  poster_path: string | null
+  backdrop_path: string | null
+  vote_average: number
+  release_date: string
+  year: number | null
+  type: 'movie' | 'tv'
+}
+
 export default function SearchPage() {
   const [selectedHit, setSelectedHit] = useState<SearchCardItem | null>(null);
+  const [selectedPopularItem, setSelectedPopularItem] = useState<PopularItem | null>(null);
   const navigate = useNavigate();
   const { registerSearchInput } = useSearchFocus();
 
@@ -33,6 +47,21 @@ export default function SearchPage() {
   });
 
   const pendingChanges = status?.sync_status?.pending_changes ?? 0;
+
+  const handleClose = useCallback(() => {
+    setSelectedHit(null);
+    setSelectedPopularItem(null);
+  }, []);
+
+  const handleSelectHit = useCallback((hit: SearchCardItem) => {
+    setSelectedHit(hit);
+    setSelectedPopularItem(null);
+  }, []);
+
+  const handlePopularSelect = useCallback((item: PopularItem) => {
+    setSelectedPopularItem(item);
+    setSelectedHit(null);
+  }, []);
 
   return (
     <InstantSearch searchClient={searchClient} indexName="iptv_content">
@@ -80,12 +109,13 @@ export default function SearchPage() {
         >
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
-              <ListingsHits onSelectListing={setSelectedHit} />
+              <ListingsHits onSelectListing={handleSelectHit} />
+              <PopularHits onSelect={handlePopularSelect} />
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-gray-200">Content</h2>
                 </div>
-                <Hits onSelectHit={setSelectedHit} />
+                <Hits onSelectHit={handleSelectHit} />
               </div>
             </div>
             <div className={`flex-shrink-0 px-4 md:px-6 ${pendingChanges > 0 ? 'pb-20 md:pb-16' : 'pb-4'}`}>
@@ -95,7 +125,7 @@ export default function SearchPage() {
         </FocusableSection>
       </div>
 
-      <DetailModal hit={selectedHit} onClose={() => setSelectedHit(null)} />
+      <DetailModal hit={selectedHit} popularItem={selectedPopularItem} onClose={handleClose} />
     </InstantSearch>
   );
 }

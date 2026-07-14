@@ -1,4 +1,4 @@
-import { searchClient } from './client'
+import { apiClient, searchClient } from './client'
 import type { ListingHit } from '../../types/listings'
 
 export async function searchListings(query: string, limit: number = 3): Promise<ListingHit[]> {
@@ -19,5 +19,34 @@ export async function searchListings(query: string, limit: number = 3): Promise<
 
 export async function fetchDocument<T = Record<string, unknown>>(docId: string): Promise<T> {
   const { data } = await searchClient.get<T>(`/result/${encodeURIComponent(docId)}`)
+  return data
+}
+
+export interface PopularItem {
+  tmdb_id: number;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  release_date: string;
+  year: number | null;
+  type: 'movie' | 'tv';
+}
+
+export interface PopularPageResponse {
+  items: PopularItem[];
+  page: number;
+  total_pages?: number;
+  from_cache?: boolean;
+}
+
+export async function fetchPopularMoviePage(page = 1, bypassCache = false): Promise<PopularPageResponse> {
+  const { data } = await apiClient.post<PopularPageResponse>('/populate/movie', { page, bypass_cache: bypassCache })
+  return data
+}
+
+export async function fetchPopularTvPage(page = 1, bypassCache = false): Promise<PopularPageResponse> {
+  const { data } = await apiClient.post<PopularPageResponse>('/populate/tv', { page, bypass_cache: bypassCache })
   return data
 }

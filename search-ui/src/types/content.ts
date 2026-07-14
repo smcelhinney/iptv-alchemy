@@ -29,3 +29,15 @@ export interface Hit {
   episode_count?: number
   __position?: number
 }
+
+export interface PopularItem {
+  tmdb_id: number
+  title: string
+  overview: string
+  poster_path: string | null
+  backdrop_path: string | null
+  vote_average: number
+  release_date: string
+  year: number | null
+  type: 'movie' | 'tv'
+}

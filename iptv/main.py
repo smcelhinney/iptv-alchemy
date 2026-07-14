@@ -209,7 +209,7 @@ class AlchemyProcessor:
         try:
             # Read Meilisearch config
             meilisearch_host = os.getenv('MEILISEARCH_HOST', 'http://iptv-meilisearch:7700')
-            meilisearch_api_key = os.getenv('MEILISEARCH_API_KEY', 'iptv-alchemy-default-key')
+            meilisearch_api_key = os.getenv('MEILISEARCH_KEY', 'iptv-alchemy-default-key')
 
             # Parse M3U to get channel mapping
             channel_map = self.m3u_parser.get_channel_map('iptv.m3u')
@@ -390,10 +390,20 @@ class AlchemyProcessor:
 
     def process(self) -> bool:
         """Full pipeline: download, extract categories, reindex, and recreate IPTV files."""
+        print("Step 1/4: Downloading files...")
         if not self.download():
             return False
+        print("✓ Downloaded all files successfully\n")
+
+        print("Step 2/4: Extracting categories...")
         self.extract_categories()
+        print("✓ Categories extracted\n")
+
+        print("Step 3/4: Indexing content to Meilisearch...")
         self.reindex(index_type='all')
+        print()
+
+        print("Step 4/4: Generating output files...")
         self.process_local()
         return True
 

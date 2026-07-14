@@ -78,3 +78,10 @@ body {
     width: 22rem;
   }
 }
+
+/* Quest "Saved to Apps" / PWA standalone: push content below the persistent browser toolbar */
+@media (display-mode: standalone) {
+  .app-shell {
+    padding-top: 1.5rem;
+  }
+}

@@ -134,7 +134,7 @@ function AppShell() {
   return (
     <TVKeyHandler>
     <TVLayout>
-    <div className="h-screen bg-gray-900 text-gray-100 flex flex-col overflow-hidden">
+    <div className="app-shell h-screen bg-gray-900 text-gray-100 flex flex-col overflow-hidden">
       {hasOnboarded && <Header />}
       <OnboardingGuard>
         <Routes>

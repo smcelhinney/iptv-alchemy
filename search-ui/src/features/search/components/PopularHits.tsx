@@ -26,15 +26,10 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
   const totalPagesRef = useRef(1)
   const [hasMore, setHasMore] = useState(true)
   const loadedPages = useRef(new Set<number>())
-  const bypassRef = useRef(false)
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: [queryKey, currentPage],
-    queryFn: () => {
-      const bypass = bypassRef.current
-      bypassRef.current = false
-      return fetchPage(currentPage, bypass)
-    },
+    queryFn: () => fetchPage(currentPage),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -88,7 +83,6 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
       })
     }
     await clearPopularCache(type)
-    bypassRef.current = true
     setCurrentPage(1)
   }
 

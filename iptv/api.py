@@ -1676,7 +1676,7 @@ def _tmdb_headers():
 
 TMDB_BASE = 'https://api.themoviedb.org/3'
 POPULAR_CACHE_PREFIX = 'popular:'
-POPULAR_CACHE_TTL = 3600  # 1 hour
+POPULAR_CACHE_TTL = 86400  # 24 hours
 
 
 def _normalize_movie(m):

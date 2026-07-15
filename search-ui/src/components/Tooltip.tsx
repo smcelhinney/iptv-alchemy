@@ -53,7 +53,7 @@ export default function Tooltip({
       {children}
       {visible && (
         <div
-          className={`absolute z-50 ${posClasses[position]} pointer-events-none`}
+          className={`absolute z-[100] ${posClasses[position]} pointer-events-none`}
         >
           <div className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-lg w-max max-w-[200px]">
             {content}

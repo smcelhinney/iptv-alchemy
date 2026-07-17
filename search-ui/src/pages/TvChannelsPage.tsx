@@ -4,19 +4,16 @@ import { useQueries } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
 import type { Hit } from '../types'
-import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortButton } from './LibraryLayout'
+import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortLink } from './LibraryLayout'
 import type { TvChannelsContext } from './TvChannelsGrid'
 
 type TvSort = 'alpha' | 'added'
 
 export default function TvChannelsPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const sort = (searchParams.get('sort') as TvSort) || 'alpha'
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const setSort = (newSort: TvSort) => {
-    setSearchParams((prev) => { prev.set('sort', newSort); return prev }, { replace: true })
-  }
   const collectionsPath = '/library/tv-channels/collections'
   const { data: library } = useLibrary()
   const ids = library?.tv_channels ?? []
@@ -68,8 +65,8 @@ export default function TvChannelsPage() {
     <>
       <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton active={sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
-          <SortButton active={sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Added" />
+          <SortLink active={sort === 'alpha'} to="?sort=alpha" onClick={() => setDrawerOpen(false)} label="Alphabetically" />
+          <SortLink active={sort === 'added'} to="?sort=added" onClick={() => setDrawerOpen(false)} label="Added" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink

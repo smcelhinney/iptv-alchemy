@@ -50,8 +50,10 @@ export default function TMDBMetadataModal({ docId, docTitle, onClose, onLinked }
   }, [])
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+    <button
+      type="button"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 appearance-none border-none text-left"
+      aria-label="Close"
       onClick={onClose}
     >
       <div
@@ -157,6 +159,6 @@ export default function TMDBMetadataModal({ docId, docTitle, onClose, onLinked }
           </div>
         </div>
       </div>
-    </div>
+    </button>
   )
 }

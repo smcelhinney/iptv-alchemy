@@ -237,8 +237,10 @@ export default function DetailModal({ hit, popularItem, onClose }: DetailModalPr
   const popularAdded = isPopular && !!resolvedDocId
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+    <button
+      type="button"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 appearance-none border-none text-left"
+      aria-label="Close"
       onClick={onClose}
     >
       <div
@@ -490,6 +492,6 @@ export default function DetailModal({ hit, popularItem, onClose }: DetailModalPr
           )}
         </div>
       </div>
-    </div>
+    </button>
   )
 }

@@ -91,8 +91,10 @@ export default function PlayerOverlay({ open, onClose, url, title }: PlayerOverl
   const streamUrl = url.replace(/\.(ts|mkv)$/, '.m3u8')
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80"
+    <button
+      type="button"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 appearance-none border-none text-left"
+      aria-label="Close"
       onClick={onClose}
     >
       <div
@@ -213,6 +215,6 @@ export default function PlayerOverlay({ open, onClose, url, title }: PlayerOverl
           }}
         />
       </div>
-    </div>
+    </button>
   )
 }

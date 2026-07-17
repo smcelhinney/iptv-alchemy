@@ -113,7 +113,7 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
   }, [hit, onSelect, to, navigate])
 
   const cardId = `card-${hit.id}${index !== undefined ? `-${index}` : ''}`
-  const { ref: cardRef } = useFocusable({
+  const { ref: cardRef } = useFocusable<HTMLButtonElement>({
     id: cardId,
     focusGroup: 'cards',
     onActivate: handleActivate,
@@ -123,9 +123,10 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
 
   return (
     <>
-      <div
+      <button
+        type="button"
         ref={tvMode ? cardRef : undefined}
-        className="group w-full h-28 max-w-full bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors flex cursor-pointer"
+        className="group w-full h-28 max-w-full bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors flex appearance-none bg-transparent cursor-pointer p-0 m-0 text-left"
       onClick={handleCardClick}
     >
       {/* Selection checkbox */}
@@ -302,7 +303,7 @@ export default function SearchCard({ hit, onSelect, onRemove, index, resumeTime,
             }
           </p>
         </div>
-      </div>
+      </button>
     </>
   )
 }

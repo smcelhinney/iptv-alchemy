@@ -45,8 +45,10 @@ export default function SettingsDrawer({ open, onClose }: Props) {
   return (
     <>
       {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50"
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/50 appearance-none border-none text-left"
+          aria-label="Close"
           onClick={onClose}
         />
       )}

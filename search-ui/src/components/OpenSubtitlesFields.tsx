@@ -100,8 +100,10 @@ function Field({
 
 function OpenSubtitlesInfoModal({ onClose }: { onClose: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+    <button
+      type="button"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 appearance-none border-none text-left"
+      aria-label="Close"
       onClick={onClose}
     >
       <div
@@ -173,6 +175,6 @@ function OpenSubtitlesInfoModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

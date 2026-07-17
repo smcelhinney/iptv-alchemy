@@ -58,9 +58,10 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
       {collections && collections.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {collections.map((col) => (
-            <div
+            <button
+              type="button"
               key={col.id}
-              className="group relative bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-gray-600 transition-colors cursor-pointer"
+              className="group relative bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-gray-600 transition-colors cursor-pointer appearance-none bg-transparent text-left w-full"
               onClick={() => navigate(`/library/${routeSegment}/collections/${col.id}`)}
             >
               <div className="flex items-start justify-between mb-2">
@@ -78,15 +79,17 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
                 </button>
               </div>
               <p className="text-xs text-gray-400">{col.count} {col.count === 1 ? 'item' : 'items'}</p>
-            </div>
+            </button>
           ))}
         </div>
       )}
 
       {/* Create modal */}
       {showCreate && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+        <button
+          type="button"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 appearance-none border-none text-left"
+          aria-label="Close"
           onClick={() => setShowCreate(false)}
         >
           <div
@@ -119,7 +122,7 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
               </button>
             </div>
           </div>
-        </div>
+        </button>
       )}
     </div>
   )

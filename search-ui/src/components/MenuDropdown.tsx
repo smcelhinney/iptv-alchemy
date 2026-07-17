@@ -29,9 +29,15 @@ export default function MenuDropdown({ items, trigger }: MenuDropdownProps) {
 
   return (
     <div className="relative inline-block" ref={containerRef}>
-      <div onClick={() => setOpen(!open)} className="cursor-pointer">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="cursor-pointer appearance-none border-none bg-transparent p-0 m-0"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
         {trigger}
-      </div>
+      </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-50 min-w-max bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
           {items.map((item, i) => (

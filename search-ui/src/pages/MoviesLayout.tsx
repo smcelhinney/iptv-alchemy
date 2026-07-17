@@ -5,7 +5,7 @@ import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
 import { usePlaybackMemory, useDeletePlaybackMemory, useLastPlayed } from '../hooks/usePlaybackMemory'
 import type { Hit } from '../types'
-import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortButton } from './LibraryLayout'
+import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortLink } from './LibraryLayout'
 
 type MovieSort = 'alpha' | 'added' | 'recent'
 
@@ -18,13 +18,10 @@ export interface MoviesContext {
 }
 
 export default function MoviesLayout() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const sort = (searchParams.get('sort') as MovieSort) || 'recent'
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const setSort = (newSort: MovieSort) => {
-    setSearchParams((prev) => { prev.set('sort', newSort); return prev }, { replace: true })
-  }
   const location = useLocation()
   const onCollections = location.pathname.includes('/collections')
   const { data: library } = useLibrary()
@@ -80,9 +77,9 @@ export default function MoviesLayout() {
     <>
       <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton active={!onCollections && sort === 'recent'} onClick={() => { setSort('recent'); setDrawerOpen(false) }} label="Recently Played" />
-          <SortButton active={!onCollections && sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Date Added" />
-          <SortButton active={!onCollections && sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
+          <SortLink active={sort === 'recent'} to="/library/movies?sort=recent" onClick={() => setDrawerOpen(false)} label="Recently Played" />
+          <SortLink active={sort === 'added'} to="/library/movies?sort=added" onClick={() => setDrawerOpen(false)} label="Date Added" />
+          <SortLink active={sort === 'alpha'} to="/library/movies?sort=alpha" onClick={() => setDrawerOpen(false)} label="Alphabetically" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink

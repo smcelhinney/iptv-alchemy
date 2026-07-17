@@ -119,9 +119,10 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
           ))
         )}
         {allItems.map((item, idx) => (
-          <div
+          <button
+            type="button"
             key={`${item.type}-${item.tmdb_id}-${idx}`}
-            className="w-36 flex-shrink-0 cursor-pointer group"
+            className="w-36 flex-shrink-0 group appearance-none bg-transparent cursor-pointer p-0 m-0 text-left border border-gray-700/50 rounded-lg hover:border-gray-600 transition-colors"
             onClick={() => onSelect(item)}
           >
             <div className="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden relative">
@@ -147,7 +148,7 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
             <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded mt-1 inline-block ${color}`}>
               {title}
             </span>
-          </div>
+          </button>
         ))}
         {allItems.length > 0 && hasMore && (
           <div ref={sentinelRef} className="w-10 flex-shrink-0 flex items-center justify-center">

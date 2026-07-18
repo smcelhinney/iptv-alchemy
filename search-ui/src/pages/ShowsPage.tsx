@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Outlet, NavLink, useSearchParams } from 'react-router-dom'
+import { Outlet, NavLink, useSearchParams, useLocation } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
@@ -11,6 +11,8 @@ type ShowSort = 'alpha' | 'added'
 
 export default function ShowsPage() {
   const [searchParams] = useSearchParams()
+  const location = useLocation()
+  const onCollections = location.pathname.includes('/collections')
   const sort = (searchParams.get('sort') as ShowSort) || 'alpha'
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -65,8 +67,8 @@ export default function ShowsPage() {
     <>
       <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortLink active={sort === 'alpha'} to="?sort=alpha" onClick={() => setDrawerOpen(false)} label="Alphabetically" />
-          <SortLink active={sort === 'added'} to="?sort=added" onClick={() => setDrawerOpen(false)} label="Date Added" />
+          <SortLink active={ onCollections ? false : sort === 'alpha'} to="/library/tv-shows?sort=alpha" onClick={() => setDrawerOpen(false)} label="Alphabetically" />
+          <SortLink active={ onCollections ? false : sort === 'added'} to="/library/tv-shows?sort=added" onClick={() => setDrawerOpen(false)} label="Date Added" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink

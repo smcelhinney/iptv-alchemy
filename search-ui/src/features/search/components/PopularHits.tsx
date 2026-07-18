@@ -9,6 +9,13 @@ interface PopularHitsProps {
   onSelect: (item: PopularItem) => void
 }
 
+const MIN_START_PAGE = 1
+const MAX_START_PAGE = 25
+
+function getRandomStartPage() {
+  return Math.floor(Math.random() * (MAX_START_PAGE - MIN_START_PAGE + 1)) + MIN_START_PAGE
+}
+
 function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
   title: string
   color: string
@@ -22,7 +29,7 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   const [allItems, setAllItems] = useState<PopularItem[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(() => getRandomStartPage())
   const totalPagesRef = useRef(1)
   const [hasMore, setHasMore] = useState(true)
   const loadedPages = useRef(new Set<number>())
@@ -70,10 +77,11 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
   )
 
   const handleClear = async () => {
+    const newPage = getRandomStartPage()
     queryClient.removeQueries({ queryKey: [queryKey] })
     loadedPages.current.clear()
     setAllItems([])
-    setCurrentPage(1)
+    setCurrentPage(newPage)
     totalPagesRef.current = 1
     setHasMore(true)
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -83,7 +91,6 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
       })
     }
     await clearPopularCache(type)
-    setCurrentPage(1)
   }
 
   return (

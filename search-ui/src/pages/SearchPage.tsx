@@ -35,6 +35,14 @@ interface PopularItem {
 }
 
 export default function SearchPage() {
+  return (
+    <InstantSearch searchClient={searchClient} indexName="iptv_content">
+      <SearchPageContent />
+    </InstantSearch>
+  );
+}
+
+function SearchPageContent() {
   const [selectedHit, setSelectedHit] = useState<SearchCardItem | null>(null);
   const [selectedPopularItem, setSelectedPopularItem] = useState<PopularItem | null>(null);
   const navigate = useNavigate();
@@ -47,6 +55,8 @@ export default function SearchPage() {
   });
 
   const pendingChanges = status?.sync_status?.pending_changes ?? 0;
+  const { query } = useSearchBox();
+  const isSearching = query && query.trim().length > 0;
 
   const handleClose = useCallback(() => {
     setSelectedHit(null);
@@ -64,15 +74,17 @@ export default function SearchPage() {
   }, []);
 
   return (
-    <InstantSearch searchClient={searchClient} indexName="iptv_content">
+    <>
       {/* Mobile Header */}
       <div className="md:hidden flex-shrink-0 max-w-full bg-gray-850 border-b border-gray-700">
         <div className="p-4">
           <MobileSearchBox inputRef={registerSearchInput} />
         </div>
-        <div className="px-4 pb-3">
-          <ContentTypeFilterButtons />
-        </div>
+        {isSearching && (
+          <div className="px-4 pb-3">
+            <ContentTypeFilterButtons />
+          </div>
+        )}
       </div>
 
       {/* Desktop + Mobile layout */}
@@ -81,7 +93,7 @@ export default function SearchPage() {
         <aside className="hidden md:flex w-72 flex-shrink-0 bg-gray-850 border-r border-gray-700 flex-col">
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
             <SearchBox inputRef={registerSearchInput} />
-            <ContentTypeFilter />
+            {isSearching && <ContentTypeFilter />}
           </div>
           {isVRHeadset() && (
             <div className="flex-shrink-0 p-4 border-t border-gray-700">
@@ -126,7 +138,7 @@ export default function SearchPage() {
       </div>
 
       <DetailModal hit={selectedHit} popularItem={selectedPopularItem} onClose={handleClose} />
-    </InstantSearch>
+    </>
   );
 }
 

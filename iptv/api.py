@@ -1471,6 +1471,23 @@ def api_get_collection(col_id):
     return jsonify({'id': col_id, 'name': col['name'], 'type': col['type'], 'items': items})
 
 
+@app.route('/api/collections/<col_id>', methods=['PATCH', 'PUT'])
+def api_rename_collection(col_id):
+    from .library_db import get_collection, rename_collection
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    col = get_collection(col_id)
+    if col is None:
+        return jsonify({'error': 'Collection not found'}), 404
+    ok = rename_collection(col_id, name)
+    if not ok:
+        return jsonify({'error': 'Failed to rename collection'}), 500
+    logger.info("collection renamed: %s -> %s", col_id, name)
+    return jsonify({'id': col_id, 'name': name, 'type': col.get('type', 'movies')})
+
+
 @app.route('/api/collections/<col_id>', methods=['DELETE'])
 def api_delete_collection(col_id):
     from .library_db import delete_collection
@@ -1782,10 +1799,10 @@ def api_populate_movie():
         )
         resp.raise_for_status()
         raw = resp.json()
-        items = [_normalize_movie(m) for m in raw.get('results', [])[:10]]
+        items = [_normalize_movie(m) for m in raw.get('results', [])]
         total_pages = min(raw.get('total_pages', 1), 500)
         _set_popular_cache('movie', page, items, total_pages)
-        return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': False})
+        return jsonify({'items': items[:10], 'page': page, 'total_pages': total_pages, 'from_cache': False})
     except http_requests.RequestException as e:
         logger.error("TMDB populate movie request failed: %s", e)
         return jsonify({'error': 'Failed to fetch popular movies'}), 502
@@ -1815,6 +1832,7 @@ def api_populate_tv():
         resp = http_requests.get(
             f'{TMDB_BASE}/tv/popular',
             params={
+                'include_adult': 'false',
                 'language': 'en-US',
                 'page': page,
             },
@@ -1823,10 +1841,10 @@ def api_populate_tv():
         )
         resp.raise_for_status()
         raw = resp.json()
-        items = [_normalize_tv(t) for t in raw.get('results', [])[:10]]
+        items = [_normalize_tv(t) for t in raw.get('results', [])]
         total_pages = min(raw.get('total_pages', 1), 500)
         _set_popular_cache('tv', page, items, total_pages)
-        return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': False})
+        return jsonify({'items': items[:10], 'page': page, 'total_pages': total_pages, 'from_cache': False})
     except http_requests.RequestException as e:
         logger.error("TMDB populate TV request failed: %s", e)
         return jsonify({'error': 'Failed to fetch popular TV series'}), 502

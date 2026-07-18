@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CollectionType } from '../lib/api/collection-service'
 import { COLLECTION_TYPE_ROUTE } from '../lib/api/collection-service'
-import { useCollections, useCreateCollection, useDeleteCollection } from '../hooks/useCollections'
+import { useCollections, useCreateCollection, useDeleteCollection, useRenameCollection } from '../hooks/useCollections'
 
 interface CollectionsPageProps {
   type: CollectionType
@@ -14,7 +14,10 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
   const { data: collections, isLoading } = useCollections(type)
   const createMut = useCreateCollection(type)
   const deleteMut = useDeleteCollection()
+  const renameMut = useRenameCollection()
   const [showCreate, setShowCreate] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState('')
 
   const handleCreate = () => {
@@ -26,6 +29,27 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
         setShowCreate(false)
       },
     })
+  }
+
+  const openEdit = (col: { id: string; name: string }) => {
+    setEditingId(col.id)
+    setName(col.name)
+    setShowEdit(true)
+  }
+
+  const handleEdit = () => {
+    const trimmed = name.trim()
+    if (!trimmed || !editingId) return
+    renameMut.mutate(
+      { id: editingId, name: trimmed },
+      {
+        onSuccess: () => {
+          setName('')
+          setEditingId(null)
+          setShowEdit(false)
+        },
+      }
+    )
   }
 
   return (
@@ -66,17 +90,30 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-sm font-semibold text-white truncate flex-1">{col.name}</h3>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (confirm(`Delete "${col.name}"?`)) deleteMut.mutate(col.id)
-                  }}
-                  className="ml-2 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-700/50 transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openEdit(col)
+                    }}
+                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-blue-400 hover:bg-gray-700/50 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm(`Delete "${col.name}"?`)) deleteMut.mutate(col.id)
+                    }}
+                    className="ml-1 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-700/50 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-gray-400">{col.count} {col.count === 1 ? 'item' : 'items'}</p>
             </button>
@@ -86,10 +123,8 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
 
       {/* Create modal */}
       {showCreate && (
-        <button
-          type="button"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 appearance-none border-none text-left"
-          aria-label="Close"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
           onClick={() => setShowCreate(false)}
         >
           <div
@@ -122,7 +157,46 @@ export default function CollectionsPage({ type }: CollectionsPageProps) {
               </button>
             </div>
           </div>
-        </button>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {showEdit && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+          onClick={() => setShowEdit(false)}
+        >
+          <div
+            className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-white mb-4">Rename Collection</h2>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleEdit()}
+              autoFocus
+              placeholder="Collection name"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowEdit(false)}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEdit}
+                disabled={!name.trim() || renameMut.isPending}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition-colors"
+              >
+                {renameMut.isPending ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

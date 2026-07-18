@@ -134,7 +134,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
         {
           enableWorker: true,
           enableStashBuffer: true,
-          stashInitialSize: 1024 * 1024,  // 1MB initial buffer before playback
+          stashInitialSize: 3 * 1024 * 1024,  // 3MB initial buffer before playback
           autoCleanupSourceBuffer: true,
           autoCleanupMaxBackwardDuration: 30,
           autoCleanupMinBackwardDuration: 10,

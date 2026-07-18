@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchPlannerChannels, fetchPlannerEpg } from '../lib/api/planner-service'
 import { usePlayerStore } from '../stores/playerStore'
@@ -117,6 +117,7 @@ export default function PlannerPage() {
   }, [now, startDate])
 
   const openPlayer = usePlayerStore((s) => s.openPlayer)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const { data: channelsData, isLoading: channelsLoading } = useQuery({
     queryKey: ['planner-channels'],
@@ -158,6 +159,19 @@ export default function PlannerPage() {
 
   const isLoading = channelsLoading || epgLoading
 
+  // Auto-scroll horizontally to current time when the page loads or date changes.
+  useEffect(() => {
+    if (isLoading || channels.length === 0) return
+    const el = scrollRef.current
+    if (!el) return
+    const now = new Date()
+    const hoursSinceStart = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60)
+    const currentTimeLeft = hoursSinceStart * HOUR_WIDTH
+    const viewportWidth = el.clientWidth - SIDEBAR_WIDTH
+    const target = currentTimeLeft - viewportWidth * 0.25
+    el.scrollLeft = Math.max(0, target)
+  }, [dateStr, isLoading, channels.length, startDate])
+
   return (
     <div className="flex flex-col h-full bg-gray-900 text-gray-100">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-850 shrink-0">
@@ -184,7 +198,7 @@ export default function PlannerPage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto min-h-0 relative">
+      <div ref={scrollRef} className="flex-1 overflow-auto min-h-0 relative">
         {isLoading ? (
           <div className="h-full flex items-center justify-center text-gray-500">
             <div className="w-8 h-8 border-2 border-gray-500 border-t-transparent rounded-full animate-spin mr-3" />

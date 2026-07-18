@@ -208,7 +208,12 @@ export default function PlayerOverlay({ open, onClose, url, title }: PlayerOverl
           controls
           width="100%"
           height="100%"
-          config={{ hls: {} }}
+          config={{
+            hls: {
+              maxBufferLength: 60,
+              maxMaxBufferLength: 600,
+            },
+          }}
           onError={() => setPlayerError(true)}
           onReady={() => {
             if (playerRef.current) playerRef.current.muted = true

@@ -4,6 +4,7 @@ import {
   fetchCollections,
   createCollection,
   deleteCollection,
+  renameCollection,
   fetchCollection,
   addToCollection,
   removeFromCollection,
@@ -32,6 +33,14 @@ export function useDeleteCollection() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteCollection(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['collections'] }),
+  })
+}
+
+export function useRenameCollection() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => renameCollection(id, name),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['collections'] }),
   })
 }

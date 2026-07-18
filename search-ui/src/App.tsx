@@ -15,6 +15,7 @@ import MovieDetailPage from "./pages/MovieDetailPage";
 import ShowDetailPage from "./pages/ShowDetailPage";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionDetailPage from "./pages/CollectionDetailPage";
+import PlannerPage from "./pages/PlannerPage";
 
 import OnboardingPage from "./pages/OnboardingPage";
 import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext";
@@ -140,6 +141,7 @@ function AppShell() {
         <Routes>
           <Route path="/onboarding/:step?" element={<OnboardingPage />} />
           <Route path="/" element={<SearchPage />} />
+          <Route path="/planner" element={<PlannerPage />} />
           <Route path="/vr" element={
             <Suspense fallback={<div className="h-screen bg-gray-900 flex items-center justify-center text-gray-400">Loading VR...</div>}>
               <VRPage />

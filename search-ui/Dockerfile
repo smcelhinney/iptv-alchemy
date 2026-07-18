@@ -7,7 +7,7 @@ WORKDIR /app
 ARG VITE_API_BASE=/api
 ENV VITE_API_BASE=$VITE_API_BASE
 
-COPY package*.json ./
+COPY package*.json .npmrc ./
 RUN npm install
 
 COPY . .

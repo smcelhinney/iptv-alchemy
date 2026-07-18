@@ -2015,6 +2015,47 @@ def api_connection_status():
     })
 
 
+@app.route('/api/planner/channels', methods=['GET', 'OPTIONS'])
+def api_planner_channels():
+    """Return live TV channels in Planby format from filtered output.m3u."""
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        from .planner import get_planby_channels
+        channels = get_planby_channels()
+        return jsonify({'channels': channels})
+    except Exception as e:
+        logger.exception('Failed to generate planner channels: %s', e)
+        return jsonify({'error': 'Failed to generate planner channels'}), 500
+
+
+@app.route('/api/planner/epg', methods=['GET', 'OPTIONS'])
+def api_planner_epg():
+    """Return EPG data in Planby format from filtered output.xml for a given date.
+
+    Query params:
+      date (str): optional ISO date (YYYY-MM-DD). Defaults to today.
+      offset (int): optional client timezone offset from UTC in minutes
+        (matches JavaScript Date.getTimezoneOffset()). Defaults to 0 (UTC).
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        from .planner import get_planby_epg
+        from datetime import datetime
+        date_param = request.args.get('date')
+        target_date = datetime.strptime(date_param, '%Y-%m-%d') if date_param else None
+        try:
+            timezone_offset_minutes = int(request.args.get('offset', 0))
+        except (TypeError, ValueError):
+            timezone_offset_minutes = 0
+        epg, date_str = get_planby_epg(target_date, timezone_offset_minutes)
+        return jsonify({'epg': epg, 'date': date_str})
+    except Exception as e:
+        logger.exception('Failed to generate planner epg: %s', e)
+        return jsonify({'error': 'Failed to generate planner epg'}), 500
+
+
 if __name__ == '__main__':
     from .config_db import seed_defaults
 

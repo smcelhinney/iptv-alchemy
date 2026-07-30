@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useId, useCallback } from 'react'
+import Hls from 'hls.js'
 import mpegts from 'mpegts.js'
 import { useSettings } from '../contexts/SettingsContext'
 
@@ -35,7 +36,9 @@ function applyVttOffset(vtt: string, offsetMs: number): string {
 
 export default function StreamPlayer({ url, contentType, favouriteId, initialTime, savePlaybackId, subtitleUrl }: StreamPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const playerRef = useRef<mpegts.Player | null>(null)
+  const mpegtsRef = useRef<mpegts.Player | null>(null)
+  const hlsRef = useRef<Hls | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const trackRef = useRef<HTMLTrackElement | null>(null)
   const blobUrlRef = useRef<string | null>(null)
   const [error, setError] = useState(false)
@@ -44,8 +47,10 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
   const { settings } = useSettings()
   const styleId = useId()
 
-  // Route all content through backend proxy for HTTPS termination
-  const streamUrl = `${window.location.origin}/api/proxy/stream?url=${encodeURIComponent(url)}`
+  // VOD: route through the unified backend proxy for HTTPS termination
+  const vodStreamUrl = contentType === 'vod'
+    ? `${window.location.origin}/api/proxy/stream?url=${encodeURIComponent(url)}`
+    : undefined
 
   const sizeMap: Record<string, string> = {
     small: '80%',
@@ -105,6 +110,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
     return () => clearInterval(interval)
   }, [contentType, savePlaybackId, favouriteId, saveProgress])
 
+  // Live playback: backend HLS transcode + hls.js (Emby-style)
   useEffect(() => {
     setError(false)
 
@@ -113,46 +119,46 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
       return
     }
 
-    // Live: use mpegts.js for TS streaming
-    let mounted = true
+    const stopSession = () => {
+      const sid = sessionIdRef.current
+      sessionIdRef.current = null
+      if (sid) {
+        fetch(`${window.location.origin}/api/proxy/hls/${sid}/stop`, {
+          method: 'POST',
+          keepalive: true,
+        }).catch(() => {})
+      }
+    }
 
-    const initPlayer = () => {
-      if (!mounted || !videoRef.current) return
-
+    // Last-resort fallback to mpegts.js for very old browsers
+    if (!Hls.isSupported()) {
       if (!mpegts.isSupported()) {
         setError(true)
         return
       }
 
+      if (!videoRef.current) return
+
       const player = mpegts.createPlayer(
         {
           type: 'mpegts',
-          url: streamUrl,
+          url: `${window.location.origin}/api/proxy/stream?url=${encodeURIComponent(url)}`,
           isLive: true,
           cors: true,
         },
         {
           enableWorker: true,
           enableStashBuffer: true,
-          stashInitialSize: 3 * 1024 * 1024,  // 3MB initial buffer before playback
+          stashInitialSize: 1024 * 1024,
           autoCleanupSourceBuffer: true,
           autoCleanupMaxBackwardDuration: 30,
           autoCleanupMinBackwardDuration: 10,
-          liveBufferLatencyChasing: true,
-          liveBufferLatencyMaxLatency: 10,  // catch up if >10s behind live edge
-          liveBufferLatencyMinRemain: 4,    // keep at least 4s buffered when chasing
-          liveBufferLatencyChasingOnPaused: false,
+          // Disable aggressive live-edge chasing to avoid skipping
+          liveBufferLatencyChasing: false,
         },
       )
 
       player.on(mpegts.Events.MEDIA_INFO, (info: any) => {
-        console.log('[mpegts] audio info:', {
-          hasAudio: info.hasAudio,
-          audioCodec: info.audioCodec,
-          audioChannelCount: info.audioChannelCount,
-          audioSampleRate: info.audioSampleRate,
-          hasVideo: info.hasVideo,
-        })
         if (info.hasAudio && info.audioCodec) {
           const mime = `audio/mp4;codecs=${info.audioCodec}`
           if (!MediaSource.isTypeSupported(mime)) {
@@ -170,22 +176,85 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
       player.load()
       player.play()
 
-      playerRef.current = player
-    }
+      mpegtsRef.current = player
 
-    initPlayer()
-
-    return () => {
-      mounted = false
-      if (playerRef.current) {
-        playerRef.current.pause()
-        playerRef.current.unload()
-        playerRef.current.detachMediaElement()
-        playerRef.current.destroy()
-        playerRef.current = null
+      return () => {
+        if (mpegtsRef.current) {
+          mpegtsRef.current.pause()
+          mpegtsRef.current.unload()
+          mpegtsRef.current.detachMediaElement()
+          mpegtsRef.current.destroy()
+          mpegtsRef.current = null
+        }
       }
     }
-  }, [streamUrl, contentType])
+
+    let cancelled = false
+    let hls: Hls | null = null
+
+    const startHlsSession = async () => {
+      try {
+        const resp = await fetch(`${window.location.origin}/api/proxy/hls/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        })
+        const data = await resp.json()
+        if (!resp.ok || data.error) {
+          throw new Error(data.error || `HLS start failed: ${resp.status}`)
+        }
+        if (cancelled) {
+          stopSession()
+          return
+        }
+
+        sessionIdRef.current = data.session_id
+        const masterUrl = `${window.location.origin}${data.master_url}`
+
+        if (!videoRef.current) return
+
+        hls = new Hls({
+          debug: false,
+          testBandwidth: false,
+          emeEnabled: false,
+          maxMaxBufferLength: 120,
+          manifestLoadingTimeOut: 20000,
+        })
+        hlsRef.current = hls
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) {
+            console.error('[hls] fatal error', data)
+            setError(true)
+          } else {
+            console.warn('[hls] non-fatal error', data)
+          }
+        })
+
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          hls?.loadSource(masterUrl)
+        })
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          videoRef.current?.play().catch(() => {})
+        })
+
+        hls.attachMedia(videoRef.current)
+      } catch (e) {
+        console.error('[hls] failed to start session', e)
+        if (!cancelled) setError(true)
+      }
+    }
+
+    startHlsSession()
+
+    return () => {
+      cancelled = true
+      hlsRef.current?.destroy()
+      hlsRef.current = null
+      stopSession()
+    }
+  }, [url, contentType])
 
   // Fetch raw VTT text when subtitleUrl changes
   useEffect(() => {
@@ -258,7 +327,7 @@ export default function StreamPlayer({ url, contentType, favouriteId, initialTim
         autoPlay
         playsInline
         muted={false}
-        src={contentType === 'vod' ? streamUrl : undefined}
+        src={vodStreamUrl}
         onLoadedMetadata={handleLoadedMetadata}
       />
       {noAudio && (

@@ -29,6 +29,8 @@ import requests as http_requests
 # Load env vars before importing IPTV modules
 load_dotenv()
 
+from . import hls_proxy
+
 MEILISEARCH_HOST = os.getenv('MEILISEARCH_HOST', 'http://iptv-meilisearch:7700')
 MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_KEY', 'iptv-alchemy-default-key')
 MEILISEARCH_INDEX = 'iptv_content'
@@ -597,6 +599,122 @@ def api_proxy_stream():
         return _proxy_transcode(source_url)
     else:
         return _proxy_passthrough(source_url, range_header)
+
+
+# ---------------------------------------------------------------------------
+# HLS live-TV proxy
+# ---------------------------------------------------------------------------
+
+@app.route('/api/proxy/hls/start', methods=['POST', 'OPTIONS'])
+def api_proxy_hls_start():
+    """Start an HLS transcode session for a live TV source URL.
+
+    Body fields:
+      url (str): The upstream live stream URL.
+
+    Returns:
+      { session_id, master_url }
+    """
+    if request.method == 'OPTIONS':
+        return Response()
+
+    body = request.get_json(silent=True) or {}
+    source_url = body.get('url')
+    if not source_url:
+        return jsonify({'error': 'Missing url query parameter'}), 400
+
+    session = hls_proxy.create_session(source_url)
+    session.ready.wait(timeout=hls_proxy.HLS_PLAYLIST_READY_TIMEOUT + 2)
+
+    if session.error:
+        hls_proxy.stop_session(session.session_id)
+        return jsonify({'error': session.error}), 502
+
+    if not session.ready.is_set():
+        hls_proxy.stop_session(session.session_id)
+        return jsonify({'error': 'Timed out waiting for HLS playlist'}), 504
+
+    return jsonify({
+        'session_id': session.session_id,
+        'master_url': f'/api/proxy/hls/{session.session_id}/master.m3u8',
+    })
+
+
+@app.route('/api/proxy/hls/<session_id>/master.m3u8', methods=['GET', 'OPTIONS'])
+def api_proxy_hls_master(session_id: str):
+    """Serve the HLS master playlist."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    session = hls_proxy.get_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    master_path = session.temp_dir / 'master.m3u8'
+    if not master_path.exists():
+        return jsonify({'error': 'Master playlist not ready'}), 503
+
+    return Response(
+        master_path.read_bytes(),
+        headers={'Content-Type': 'application/vnd.apple.mpegurl'},
+    )
+
+
+@app.route('/api/proxy/hls/<session_id>/live.m3u8', methods=['GET', 'OPTIONS'])
+def api_proxy_hls_live(session_id: str):
+    """Serve the HLS media playlist."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    session = hls_proxy.get_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    live_path = session.temp_dir / 'live.m3u8'
+    if not live_path.exists():
+        return jsonify({'error': 'Live playlist not ready'}), 503
+
+    return Response(
+        live_path.read_bytes(),
+        headers={'Content-Type': 'application/vnd.apple.mpegurl'},
+    )
+
+
+@app.route('/api/proxy/hls/<session_id>/<path:segment>', methods=['GET', 'OPTIONS'])
+def api_proxy_hls_segment(session_id: str, segment: str):
+    """Serve an HLS .ts segment."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    # Only allow simple segment filenames to avoid path traversal.
+    if not segment or not re.fullmatch(r'[A-Za-z0-9_.\-]+', segment):
+        return jsonify({'error': 'Invalid segment name'}), 400
+
+    session = hls_proxy.get_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    segment_path = session.temp_dir / segment
+    if not segment_path.exists() or not segment_path.is_file():
+        return jsonify({'error': 'Segment not found'}), 404
+
+    return Response(
+        segment_path.read_bytes(),
+        headers={
+            'Content-Type': 'video/mp2t',
+            'Cache-Control': 'no-cache, no-store',
+        },
+    )
+
+
+@app.route('/api/proxy/hls/<session_id>/stop', methods=['POST', 'OPTIONS'])
+def api_proxy_hls_stop(session_id: str):
+    """Stop an HLS transcode session and free its resources."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    stopped = hls_proxy.stop_session(session_id)
+    return jsonify({'stopped': stopped})
 
 
 # ---------------------------------------------------------------------------

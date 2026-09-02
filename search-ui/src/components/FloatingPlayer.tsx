@@ -141,7 +141,7 @@ export default function FloatingPlayer() {
   }, [open])
 
   // Drag handlers
-  const onDragMouseDown = useCallback((e: React.MouseEvent) => {
+  const onDragPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
     setDragging(true)
     dragOffset.current = { x: e.clientX - layout.x, y: e.clientY - layout.y }
@@ -149,7 +149,7 @@ export default function FloatingPlayer() {
 
   useEffect(() => {
     if (!dragging) return
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       setLayout(prev => {
         const next = { ...prev, x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y }
         saveLayout(next)
@@ -164,16 +164,16 @@ export default function FloatingPlayer() {
         return next
       })
     }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
     return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
     }
   }, [dragging])
 
   // Resize handlers
-  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+  const onResizePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setResizing(true)
@@ -182,7 +182,7 @@ export default function FloatingPlayer() {
 
   useEffect(() => {
     if (!resizing) return
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       setLayout(prev => {
         const next = {
           ...prev,
@@ -194,11 +194,11 @@ export default function FloatingPlayer() {
       })
     }
     const onUp = () => setResizing(false)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
     return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
     }
   }, [resizing])
 
@@ -217,7 +217,8 @@ export default function FloatingPlayer() {
       {/* Header — draggable */}
       <div
         className="flex items-center justify-between px-3 py-1.5 bg-gray-800 cursor-move select-none flex-shrink-0"
-        onMouseDown={onDragMouseDown}
+        style={{ touchAction: 'none' }}
+        onPointerDown={onDragPointerDown}
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-white text-sm font-medium truncate">{title}</span>
@@ -246,7 +247,8 @@ export default function FloatingPlayer() {
       {/* Resize handle */}
       <div
         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
-        onMouseDown={onResizeMouseDown}
+        style={{ touchAction: 'none' }}
+        onPointerDown={onResizePointerDown}
       >
         <svg className="w-4 h-4 text-gray-600" viewBox="0 0 16 16" fill="currentColor">
           <path d="M14 14H10L14 10V14ZM14 14H12L14 12V14Z" />

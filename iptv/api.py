@@ -29,6 +29,8 @@ import requests as http_requests
 # Load env vars before importing IPTV modules
 load_dotenv()
 
+from . import hls_proxy
+
 MEILISEARCH_HOST = os.getenv('MEILISEARCH_HOST', 'http://iptv-meilisearch:7700')
 MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_KEY', 'iptv-alchemy-default-key')
 MEILISEARCH_INDEX = 'iptv_content'
@@ -597,6 +599,122 @@ def api_proxy_stream():
         return _proxy_transcode(source_url)
     else:
         return _proxy_passthrough(source_url, range_header)
+
+
+# ---------------------------------------------------------------------------
+# HLS live-TV proxy
+# ---------------------------------------------------------------------------
+
+@app.route('/api/proxy/hls/start', methods=['POST', 'OPTIONS'])
+def api_proxy_hls_start():
+    """Start an HLS transcode session for a live TV source URL.
+
+    Body fields:
+      url (str): The upstream live stream URL.
+
+    Returns:
+      { session_id, master_url }
+    """
+    if request.method == 'OPTIONS':
+        return Response()
+
+    body = request.get_json(silent=True) or {}
+    source_url = body.get('url')
+    if not source_url:
+        return jsonify({'error': 'Missing url query parameter'}), 400
+
+    session = hls_proxy.create_session(source_url)
+    session.ready.wait(timeout=hls_proxy.HLS_PLAYLIST_READY_TIMEOUT + 2)
+
+    if session.error:
+        hls_proxy.stop_session(session.session_id)
+        return jsonify({'error': session.error}), 502
+
+    if not session.ready.is_set():
+        hls_proxy.stop_session(session.session_id)
+        return jsonify({'error': 'Timed out waiting for HLS playlist'}), 504
+
+    return jsonify({
+        'session_id': session.session_id,
+        'master_url': f'/api/proxy/hls/{session.session_id}/master.m3u8',
+    })
+
+
+@app.route('/api/proxy/hls/<session_id>/master.m3u8', methods=['GET', 'OPTIONS'])
+def api_proxy_hls_master(session_id: str):
+    """Serve the HLS master playlist."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    session = hls_proxy.get_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    master_path = session.temp_dir / 'master.m3u8'
+    if not master_path.exists():
+        return jsonify({'error': 'Master playlist not ready'}), 503
+
+    return Response(
+        master_path.read_bytes(),
+        headers={'Content-Type': 'application/vnd.apple.mpegurl'},
+    )
+
+
+@app.route('/api/proxy/hls/<session_id>/live.m3u8', methods=['GET', 'OPTIONS'])
+def api_proxy_hls_live(session_id: str):
+    """Serve the HLS media playlist."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    session = hls_proxy.get_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    live_path = session.temp_dir / 'live.m3u8'
+    if not live_path.exists():
+        return jsonify({'error': 'Live playlist not ready'}), 503
+
+    return Response(
+        live_path.read_bytes(),
+        headers={'Content-Type': 'application/vnd.apple.mpegurl'},
+    )
+
+
+@app.route('/api/proxy/hls/<session_id>/<path:segment>', methods=['GET', 'OPTIONS'])
+def api_proxy_hls_segment(session_id: str, segment: str):
+    """Serve an HLS .ts segment."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    # Only allow simple segment filenames to avoid path traversal.
+    if not segment or not re.fullmatch(r'[A-Za-z0-9_.\-]+', segment):
+        return jsonify({'error': 'Invalid segment name'}), 400
+
+    session = hls_proxy.get_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    segment_path = session.temp_dir / segment
+    if not segment_path.exists() or not segment_path.is_file():
+        return jsonify({'error': 'Segment not found'}), 404
+
+    return Response(
+        segment_path.read_bytes(),
+        headers={
+            'Content-Type': 'video/mp2t',
+            'Cache-Control': 'no-cache, no-store',
+        },
+    )
+
+
+@app.route('/api/proxy/hls/<session_id>/stop', methods=['POST', 'OPTIONS'])
+def api_proxy_hls_stop(session_id: str):
+    """Stop an HLS transcode session and free its resources."""
+    if request.method == 'OPTIONS':
+        return Response()
+
+    stopped = hls_proxy.stop_session(session_id)
+    return jsonify({'stopped': stopped})
 
 
 # ---------------------------------------------------------------------------
@@ -1471,6 +1589,23 @@ def api_get_collection(col_id):
     return jsonify({'id': col_id, 'name': col['name'], 'type': col['type'], 'items': items})
 
 
+@app.route('/api/collections/<col_id>', methods=['PATCH', 'PUT'])
+def api_rename_collection(col_id):
+    from .library_db import get_collection, rename_collection
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    col = get_collection(col_id)
+    if col is None:
+        return jsonify({'error': 'Collection not found'}), 404
+    ok = rename_collection(col_id, name)
+    if not ok:
+        return jsonify({'error': 'Failed to rename collection'}), 500
+    logger.info("collection renamed: %s -> %s", col_id, name)
+    return jsonify({'id': col_id, 'name': name, 'type': col.get('type', 'movies')})
+
+
 @app.route('/api/collections/<col_id>', methods=['DELETE'])
 def api_delete_collection(col_id):
     from .library_db import delete_collection
@@ -1676,7 +1811,7 @@ def _tmdb_headers():
 
 TMDB_BASE = 'https://api.themoviedb.org/3'
 POPULAR_CACHE_PREFIX = 'popular:'
-POPULAR_CACHE_TTL = 3600  # 1 hour
+POPULAR_CACHE_TTL = 86400  # 24 hours
 
 
 def _normalize_movie(m):
@@ -1782,10 +1917,10 @@ def api_populate_movie():
         )
         resp.raise_for_status()
         raw = resp.json()
-        items = [_normalize_movie(m) for m in raw.get('results', [])[:10]]
+        items = [_normalize_movie(m) for m in raw.get('results', [])]
         total_pages = min(raw.get('total_pages', 1), 500)
         _set_popular_cache('movie', page, items, total_pages)
-        return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': False})
+        return jsonify({'items': items[:10], 'page': page, 'total_pages': total_pages, 'from_cache': False})
     except http_requests.RequestException as e:
         logger.error("TMDB populate movie request failed: %s", e)
         return jsonify({'error': 'Failed to fetch popular movies'}), 502
@@ -1815,6 +1950,7 @@ def api_populate_tv():
         resp = http_requests.get(
             f'{TMDB_BASE}/tv/popular',
             params={
+                'include_adult': 'false',
                 'language': 'en-US',
                 'page': page,
             },
@@ -1823,10 +1959,10 @@ def api_populate_tv():
         )
         resp.raise_for_status()
         raw = resp.json()
-        items = [_normalize_tv(t) for t in raw.get('results', [])[:10]]
+        items = [_normalize_tv(t) for t in raw.get('results', [])]
         total_pages = min(raw.get('total_pages', 1), 500)
         _set_popular_cache('tv', page, items, total_pages)
-        return jsonify({'items': items, 'page': page, 'total_pages': total_pages, 'from_cache': False})
+        return jsonify({'items': items[:10], 'page': page, 'total_pages': total_pages, 'from_cache': False})
     except http_requests.RequestException as e:
         logger.error("TMDB populate TV request failed: %s", e)
         return jsonify({'error': 'Failed to fetch popular TV series'}), 502
@@ -2013,6 +2149,47 @@ def api_connection_status():
         'active_cons': active_cons,
         'is_full': active_cons >= max_connections,
     })
+
+
+@app.route('/api/planner/channels', methods=['GET', 'OPTIONS'])
+def api_planner_channels():
+    """Return live TV channels in Planby format from filtered output.m3u."""
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        from .planner import get_planby_channels
+        channels = get_planby_channels()
+        return jsonify({'channels': channels})
+    except Exception as e:
+        logger.exception('Failed to generate planner channels: %s', e)
+        return jsonify({'error': 'Failed to generate planner channels'}), 500
+
+
+@app.route('/api/planner/epg', methods=['GET', 'OPTIONS'])
+def api_planner_epg():
+    """Return EPG data in Planby format from filtered output.xml for a given date.
+
+    Query params:
+      date (str): optional ISO date (YYYY-MM-DD). Defaults to today.
+      offset (int): optional client timezone offset from UTC in minutes
+        (matches JavaScript Date.getTimezoneOffset()). Defaults to 0 (UTC).
+    """
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        from .planner import get_planby_epg
+        from datetime import datetime
+        date_param = request.args.get('date')
+        target_date = datetime.strptime(date_param, '%Y-%m-%d') if date_param else None
+        try:
+            timezone_offset_minutes = int(request.args.get('offset', 0))
+        except (TypeError, ValueError):
+            timezone_offset_minutes = 0
+        epg, date_str = get_planby_epg(target_date, timezone_offset_minutes)
+        return jsonify({'epg': epg, 'date': date_str})
+    except Exception as e:
+        logger.exception('Failed to generate planner epg: %s', e)
+        return jsonify({'error': 'Failed to generate planner epg'}), 500
 
 
 if __name__ == '__main__':

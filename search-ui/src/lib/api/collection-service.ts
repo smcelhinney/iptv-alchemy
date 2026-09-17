@@ -36,6 +36,11 @@ export async function deleteCollection(id: string): Promise<void> {
   await apiClient.delete(`/collections/${id}`)
 }
 
+export async function renameCollection(id: string, name: string): Promise<Collection> {
+  const { data } = await apiClient.patch<Collection>(`/collections/${id}`, { name })
+  return data
+}
+
 export async function fetchCollection(id: string): Promise<CollectionDetail> {
   const { data } = await apiClient.get<CollectionDetail>(`/collections/${id}`)
   return data

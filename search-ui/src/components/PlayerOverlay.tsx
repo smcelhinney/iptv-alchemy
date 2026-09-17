@@ -63,8 +63,10 @@ export default function PlayerOverlay({
   const streamUrl = url.replace(/\.(ts|mkv)$/, ".m3u8");
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80"
+    <button
+      type="button"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 appearance-none border-none text-left"
+      aria-label="Close"
       onClick={onClose}
     >
       <div
@@ -230,13 +232,18 @@ export default function PlayerOverlay({
           controls
           width="100%"
           height="100%"
-          config={{ hls: {} }}
+          config={{
+            hls: {
+              maxBufferLength: 60,
+              maxMaxBufferLength: 600,
+            },
+          }}
           onError={() => setPlayerError(true)}
           onReady={() => {
             if (playerRef.current) playerRef.current.muted = true;
           }}
         />
       </div>
-    </div>
+    </button>
   );
 }

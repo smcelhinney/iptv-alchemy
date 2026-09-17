@@ -5,7 +5,7 @@ import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
 import { usePlaybackMemory, useDeletePlaybackMemory, useLastPlayed } from '../hooks/usePlaybackMemory'
 import type { Hit } from '../types'
-import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortButton } from './LibraryLayout'
+import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortLink } from './LibraryLayout'
 
 type MovieSort = 'alpha' | 'added' | 'recent'
 
@@ -18,15 +18,11 @@ export interface MoviesContext {
 }
 
 export default function MoviesLayout() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const sort = (searchParams.get('sort') as MovieSort) || 'recent'
-  const [drawerOpen, setDrawerOpen] = useState(false)
-
-  const setSort = (newSort: MovieSort) => {
-    setSearchParams((prev) => { prev.set('sort', newSort); return prev }, { replace: true })
-  }
+  const [searchParams] = useSearchParams()
   const location = useLocation()
   const onCollections = location.pathname.includes('/collections')
+  const sort = (searchParams.get('sort') as MovieSort) || 'recent'
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const { data: library } = useLibrary()
   const ids = library?.movies ?? []
   const removeFromLib = useRemoveFromLibrary()
@@ -80,19 +76,18 @@ export default function MoviesLayout() {
     <>
       <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton active={!onCollections && sort === 'recent'} onClick={() => { setSort('recent'); setDrawerOpen(false) }} label="Recently Played" />
-          <SortButton active={!onCollections && sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Date Added" />
-          <SortButton active={!onCollections && sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
+          <SortLink active={ onCollections ? false : sort === 'recent'} to="/library/movies?sort=recent" onClick={() => setDrawerOpen(false)} label="Recently Played" />
+          <SortLink active={ onCollections ? false : sort === 'added'} to="/library/movies?sort=added" onClick={() => setDrawerOpen(false)} label="Date Added" />
+          <SortLink active={ onCollections ? false : sort === 'alpha'} to="/library/movies?sort=alpha" onClick={() => setDrawerOpen(false)} label="Alphabetically" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink
-          to={{ pathname: '/library/movies/collections', search: '' }}
+          to={{ pathname:  '/library/movies/collections' , search: '' }}
           onClick={() => setDrawerOpen(false)}
           className={({ isActive }: { isActive: boolean }) =>
-            `w-full text-left px-3 py-2 rounded-lg text-sm transition-colors block ${
-              isActive
-                ? 'bg-gray-800 text-white'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+            `w-full text-left px-3 py-2 rounded-lg text-sm transition-colors block ${isActive
+              ? 'bg-gray-800 text-white'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
             }`
           }
         >

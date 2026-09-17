@@ -10,21 +10,7 @@ export default function Hits({ onSelectHit }: HitsProps) {
   const { hits } = useHits<SearchCardItem>()
   const { query } = useSearchBox()
 
-  // Zero state: no search query entered yet
-  if (!query) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-500">
-        <svg className="w-16 h-16 mb-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-        <p className="text-lg font-medium">Search for content</p>
-        <p className="text-sm mt-1">Use the search box to find series, movies, and live TV</p>
-      </div>
-    )
-  }
-
-  // No results for the current query
-  if (hits.length === 0) {
+  if (query && hits.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-500">
         <svg className="w-16 h-16 mb-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>

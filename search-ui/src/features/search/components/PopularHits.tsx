@@ -9,6 +9,13 @@ interface PopularHitsProps {
   onSelect: (item: PopularItem) => void
 }
 
+const MIN_START_PAGE = 1
+const MAX_START_PAGE = 25
+
+function getRandomStartPage() {
+  return Math.floor(Math.random() * (MAX_START_PAGE - MIN_START_PAGE + 1)) + MIN_START_PAGE
+}
+
 function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
   title: string
   color: string
@@ -22,19 +29,14 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   const [allItems, setAllItems] = useState<PopularItem[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(() => getRandomStartPage())
   const totalPagesRef = useRef(1)
   const [hasMore, setHasMore] = useState(true)
   const loadedPages = useRef(new Set<number>())
-  const bypassRef = useRef(false)
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: [queryKey, currentPage],
-    queryFn: () => {
-      const bypass = bypassRef.current
-      bypassRef.current = false
-      return fetchPage(currentPage, bypass)
-    },
+    queryFn: () => fetchPage(currentPage),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -75,10 +77,11 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
   )
 
   const handleClear = async () => {
+    const newPage = getRandomStartPage()
     queryClient.removeQueries({ queryKey: [queryKey] })
     loadedPages.current.clear()
     setAllItems([])
-    setCurrentPage(1)
+    setCurrentPage(newPage)
     totalPagesRef.current = 1
     setHasMore(true)
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -88,8 +91,6 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
       })
     }
     await clearPopularCache(type)
-    bypassRef.current = true
-    setCurrentPage(1)
   }
 
   return (
@@ -125,9 +126,10 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
           ))
         )}
         {allItems.map((item, idx) => (
-          <div
+          <button
+            type="button"
             key={`${item.type}-${item.tmdb_id}-${idx}`}
-            className="w-36 flex-shrink-0 cursor-pointer group"
+            className="w-36 flex-shrink-0 group appearance-none bg-transparent cursor-pointer p-0 m-0 text-left border border-gray-700/50 rounded-lg hover:border-gray-600 transition-colors"
             onClick={() => onSelect(item)}
           >
             <div className="aspect-[2/3] bg-gray-800 rounded-lg overflow-hidden relative">
@@ -153,7 +155,7 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
             <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded mt-1 inline-block ${color}`}>
               {title}
             </span>
-          </div>
+          </button>
         ))}
         {allItems.length > 0 && hasMore && (
           <div ref={sentinelRef} className="w-10 flex-shrink-0 flex items-center justify-center">

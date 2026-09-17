@@ -1,22 +1,21 @@
 import { useState, useMemo } from 'react'
-import { Outlet, NavLink, useSearchParams } from 'react-router-dom'
+import { Outlet, NavLink, useSearchParams, useLocation } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
 import { fetchDocument } from '../lib/api'
 import { useLibrary, useRemoveFromLibrary, useAddedTimes } from '../hooks/useLibrary'
 import type { Hit } from '../types'
-import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortButton } from './LibraryLayout'
+import { LibraryDrawer, LibraryDrawerToggle, SortSection, SortLink } from './LibraryLayout'
 import type { ShowsContext } from './ShowsGrid'
 
 type ShowSort = 'alpha' | 'added'
 
 export default function ShowsPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
+  const location = useLocation()
+  const onCollections = location.pathname.includes('/collections')
   const sort = (searchParams.get('sort') as ShowSort) || 'alpha'
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const setSort = (newSort: ShowSort) => {
-    setSearchParams((prev) => { prev.set('sort', newSort); return prev }, { replace: true })
-  }
   const collectionsPath = '/library/tv-shows/collections'
   const { data: library } = useLibrary()
   const ids = library?.series ?? []
@@ -68,8 +67,8 @@ export default function ShowsPage() {
     <>
       <LibraryDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Sort & Collections">
         <SortSection>
-          <SortButton active={sort === 'alpha'} onClick={() => { setSort('alpha'); setDrawerOpen(false) }} label="Alphabetically" />
-          <SortButton active={sort === 'added'} onClick={() => { setSort('added'); setDrawerOpen(false) }} label="Date Added" />
+          <SortLink active={ onCollections ? false : sort === 'alpha'} to="/library/tv-shows?sort=alpha" onClick={() => setDrawerOpen(false)} label="Alphabetically" />
+          <SortLink active={ onCollections ? false : sort === 'added'} to="/library/tv-shows?sort=added" onClick={() => setDrawerOpen(false)} label="Date Added" />
         </SortSection>
         <div className="border-t border-gray-700 my-2" />
         <NavLink

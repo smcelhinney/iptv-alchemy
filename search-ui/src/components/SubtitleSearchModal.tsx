@@ -44,8 +44,10 @@ export default function SubtitleSearchModal({ docId, tmdbId, season, episode, on
   }, [])
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+    <button
+      type="button"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 appearance-none border-none text-left"
+      aria-label="Close"
       onClick={onClose}
     >
       <div
@@ -61,7 +63,7 @@ export default function SubtitleSearchModal({ docId, tmdbId, season, episode, on
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-5 relative">
           {isLoading && (
             <div className="flex items-center gap-2 text-gray-400 text-sm">
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -90,7 +92,19 @@ export default function SubtitleSearchModal({ docId, tmdbId, season, episode, on
             <p className="text-gray-400 text-sm">No English subtitles found.</p>
           )}
 
-          <div className="space-y-2">
+          {linkMutation.isPending && (
+            <div className="absolute inset-0 bg-gray-900/80 flex items-center justify-center z-10">
+              <div className="flex flex-col items-center gap-3">
+                <svg className="w-8 h-8 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-blue-300 text-sm font-medium">Downloading subtitle...</span>
+              </div>
+            </div>
+          )}
+
+          <div className={`space-y-2 ${linkMutation.isPending ? 'opacity-30 pointer-events-none' : ''}`}>
             {results?.map((result) => (
               <button
                 key={result.file_id}
@@ -118,6 +132,6 @@ export default function SubtitleSearchModal({ docId, tmdbId, season, episode, on
           </div>
         </div>
       </div>
-    </div>
+    </button>
   )
 }

@@ -467,14 +467,15 @@ export default function ShowDetailPage() {
                         {/* Play button on hover — only clickable element */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           <Tooltip content="Play episode">
-                            <div
-                              className="w-10 h-10 flex items-center justify-center rounded-full bg-green-600 text-white cursor-pointer pointer-events-auto"
+                            <button
+                              type="button"
+                              className="w-10 h-10 flex items-center justify-center rounded-full bg-green-600 text-white cursor-pointer pointer-events-auto appearance-none border-none p-0 m-0"
                               onClick={() => handlePlayEpisode(our, tmdbEp?.name)}
                             >
                               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                               </svg>
-                            </div>
+                            </button>
                           </Tooltip>
                         </div>
 
@@ -539,10 +540,11 @@ export default function ShowDetailPage() {
                 <h2 className="text-sm font-semibold text-gray-300 mb-2">Cast</h2>
                 <div className="flex flex-wrap gap-4">
                   {tmdbData.cast.slice(0, 16).map((actor) => (
-                    <div
+                    <button
+                      type="button"
                       key={actor.id}
                       onClick={() => setSelectedPersonId(actor.id)}
-                      className="relative w-28 sm:w-32 h-40 sm:h-44 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0 group cursor-pointer hover:brightness-90 transition"
+                      className="relative w-28 sm:w-32 h-40 sm:h-44 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0 group cursor-pointer hover:brightness-90 transition appearance-none bg-transparent p-0 m-0 text-left border border-gray-700/50 hover:border-gray-600"
                     >
                       {actor.profile_url ? (
                         <img
@@ -560,7 +562,7 @@ export default function ShowDetailPage() {
                         <p className="text-xs text-white font-semibold truncate">{actor.name}</p>
                         <p className="text-[11px] text-gray-400 truncate">{actor.character}</p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -574,10 +576,11 @@ export default function ShowDetailPage() {
                   {aggregateCrew(tmdbData.crew)
                     .slice(0, 40)
                     .map((member) => (
-                      <div
+                      <button
+                        type="button"
                         key={member.id}
                         onClick={() => setSelectedPersonId(member.id)}
-                        className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-700/50 transition"
+                        className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-700/50 transition appearance-none bg-transparent text-left w-full border border-gray-700/50 hover:border-gray-600"
                       >
                         {member.profile_url ? (
                           <img
@@ -595,7 +598,7 @@ export default function ShowDetailPage() {
                           <p className="text-xs text-white font-medium truncate">{member.name}</p>
                           <p className="text-[11px] text-gray-400 truncate">{member.jobs.join(', ')}</p>
                         </div>
-                      </div>
+                      </button>
                     ))}
                 </div>
               </div>

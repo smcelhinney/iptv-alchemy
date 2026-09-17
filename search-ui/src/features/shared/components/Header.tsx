@@ -30,6 +30,12 @@ export default function Header() {
     onActivate: () => document.getElementById('nav-admin-link')?.click(),
   })
 
+  const plannerLink = useFocusable<HTMLAnchorElement>({
+    id: 'nav-planner',
+    focusGroup: 'header',
+    onActivate: () => document.getElementById('nav-planner-link')?.click(),
+  })
+
   const tvMode = isTV()
 
   return (
@@ -69,6 +75,20 @@ export default function Header() {
           }
         >
           Search
+        </NavLink>
+        <NavLink
+          to="/planner"
+          id="nav-planner-link"
+          ref={tvMode ? plannerLink.ref : undefined}
+          className={({ isActive }) =>
+            `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-gray-700 text-white'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-750'
+            }`
+          }
+        >
+          Planner
         </NavLink>
         <NavLink
           to="/library"

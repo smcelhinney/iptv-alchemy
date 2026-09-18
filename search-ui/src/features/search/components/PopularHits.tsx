@@ -150,11 +150,13 @@ function PopularSection({ title, color, fetchPage, queryKey, onSelect, type }: {
                 {(item.vote_average ?? 0).toFixed(1)}
               </div>
             </div>
-            <h3 className="text-sm font-medium text-gray-200 mt-2 truncate">{item.title}</h3>
-            {item.year && <p className="text-xs text-gray-500">{item.year}</p>}
-            <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded mt-1 inline-block ${color}`}>
-              {title}
-            </span>
+            <div className="p-2">
+              <h3 className="text-sm font-medium text-gray-200 mt-2 truncate">{item.title}</h3>
+              {item.year && <p className="text-xs text-gray-500">{item.year}</p>}
+              <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded mt-1 inline-block ${color}`}>
+                {title}
+              </span>
+            </div>
           </button>
         ))}
         {allItems.length > 0 && hasMore && (

@@ -1682,6 +1682,15 @@ def api_get_last_played():
     return jsonify(get_all_last_played())
 
 
+@app.route('/api/up-next', methods=['GET'])
+def api_up_next():
+    """Return up-next candidates sorted by last watched (movies + series)."""
+    from .up_next import build_up_next
+
+    candidates = build_up_next(limit=10)
+    return jsonify(candidates)
+
+
 # ---------------------------------------------------------------------------
 # TMDB Metadata
 # ---------------------------------------------------------------------------

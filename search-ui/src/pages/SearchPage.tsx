@@ -9,6 +9,7 @@ import ContentTypeFilterButtons from "../features/search/components/ContentTypeF
 import ListingsHits from "../features/search/components/ListingsHits";
 import Hits from "../features/search/components/Hits";
 import PopularHits from "../features/search/components/PopularHits";
+import UpNextSection from "../features/up-next/components/UpNextSection";
 import Pagination from "../features/shared/components/Pagination";
 import DetailModal from "../components/DetailModal";
 import FocusableSection from "../components/FocusableSection";
@@ -121,6 +122,7 @@ function SearchPageContent() {
         >
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              {!isSearching && <UpNextSection />}
               <ListingsHits onSelectListing={handleSelectHit} />
               <PopularHits onSelect={handlePopularSelect} />
               <div className="space-y-3">

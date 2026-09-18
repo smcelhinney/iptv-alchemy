@@ -3,6 +3,14 @@
  * Shows time only for today, "Tomorrow, HH:MM AM/PM" for tomorrow,
  * or full date/time for other days.
  */
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = Math.floor(minutes % 60)
+  if (h > 0 && m > 0) return `${h}h ${m}min`
+  if (h > 0) return `${h}h`
+  return `${m}min`
+}
+
 export function formatTime(timestamp: number): string {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())

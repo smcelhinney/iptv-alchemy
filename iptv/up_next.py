@@ -31,7 +31,7 @@ def _is_finished(current_time: float, duration: float) -> bool:
     return (current_time / duration) >= _FINISHED_THRESHOLD
 
 
-def build_up_next(limit: int = 1):
+def build_up_next(limit: int = 10):
     """Return up to ``limit`` up-next candidates sorted by last watched.
 
     Each candidate is a dict with:

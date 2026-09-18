@@ -19,7 +19,7 @@ export interface UpNextEpisode {
   episode_name: string
   season?: number | null
   episode?: number | null
-  url?: string
+  url: string
   logo?: string
 }
 
@@ -34,7 +34,7 @@ export interface UpNextSeries {
 
 export type UpNextItem = UpNextMovie | UpNextSeries
 
-export async function fetchUpNext(): Promise<UpNextItem | null> {
-  const { data } = await apiClient.get<UpNextItem | null>('/up-next')
+export async function fetchUpNext(): Promise<UpNextItem[]> {
+  const { data } = await apiClient.get<UpNextItem[]>('/up-next')
   return data
 }

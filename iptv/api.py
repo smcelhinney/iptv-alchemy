@@ -1684,11 +1684,11 @@ def api_get_last_played():
 
 @app.route('/api/up-next', methods=['GET'])
 def api_up_next():
-    """Return the single most recently watched incomplete library item."""
+    """Return up-next candidates sorted by last watched (movies + series)."""
     from .up_next import build_up_next
 
-    candidates = build_up_next(limit=1)
-    return jsonify(candidates[0] if candidates else None)
+    candidates = build_up_next(limit=10)
+    return jsonify(candidates)
 
 
 # ---------------------------------------------------------------------------

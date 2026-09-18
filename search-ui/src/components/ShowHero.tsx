@@ -15,7 +15,6 @@ export interface SeriesDoc {
 interface ShowHeroProps {
   doc: SeriesDoc
   tmdbData?: TMDBSeriesMetadata | null
-  compact?: boolean
   playButton?: ReactNode
   extraActions?: ReactNode
   header?: ReactNode
@@ -24,7 +23,6 @@ interface ShowHeroProps {
 export default function ShowHero({
   doc,
   tmdbData,
-  compact = false,
   playButton,
   extraActions,
   header,
@@ -39,19 +37,11 @@ export default function ShowHero({
   const genres = tmdbData?.genres ?? []
   const rating = tmdbData?.vote_average
 
-  const backdropHeight = compact ? 'h-64' : 'h-[28rem]'
-  const posterClass = compact
-    ? 'hidden lg:block w-40 h-56 rounded-lg object-cover bg-gray-800 flex-shrink-0'
-    : 'hidden lg:block w-[350px] h-[490px] rounded-lg object-cover bg-gray-800 flex-shrink-0'
-  const placeholderClass = compact
-    ? 'hidden lg:block w-40 h-56 rounded-lg bg-gray-800 flex items-center justify-center text-gray-600 text-sm flex-shrink-0'
-    : 'hidden lg:block w-[350px] h-[490px] rounded-lg bg-gray-800 flex items-center justify-center text-gray-600 text-sm flex-shrink-0'
-
   return (
     <div>
       {/* Backdrop */}
       {tmdbData?.backdrop_url && (
-        <div className={`${compact ? 'relative' : 'sticky top-0'} w-full ${backdropHeight} overflow-hidden`}>
+        <div className="sticky top-0 w-full h-[28rem] overflow-hidden">
           <img
             src={tmdbData.backdrop_url}
             alt={tmdbData.title || doc.series_name || doc.name || ''}
@@ -64,11 +54,7 @@ export default function ShowHero({
       {/* Content */}
       <div
         className={`relative z-10 px-6 pb-6 ${
-          tmdbData?.backdrop_url
-            ? compact
-              ? 'pt-4'
-              : '-mt-[28rem] pt-[30px]'
-            : 'pt-[30px]'
+          tmdbData?.backdrop_url ? '-mt-[28rem] pt-[30px]' : 'pt-[30px]'
         }`}
       >
         {header}
@@ -79,10 +65,12 @@ export default function ShowHero({
             <img
               src={tmdbData?.poster_url || proxyImageUrl(doc.logo)}
               alt={doc.series_name || doc.name}
-              className={posterClass}
+              className="hidden lg:block w-[350px] h-[490px] rounded-lg object-cover bg-gray-800 flex-shrink-0"
             />
           ) : (
-            <div className={placeholderClass}>No image</div>
+            <div className="hidden lg:block w-[350px] h-[490px] rounded-lg bg-gray-800 flex items-center justify-center text-gray-600 text-sm flex-shrink-0">
+              No image
+            </div>
           )}
 
           {/* Info + controls */}

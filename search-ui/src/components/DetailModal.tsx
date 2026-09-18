@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Hit, Episode, SearchCardItem } from '../types'
 import type { ListingHit } from '../types/listings'
@@ -75,6 +76,7 @@ function groupBySeason(episodes: Episode[]): { seasons: Record<number, Episode[]
 }
 
 export default function DetailModal({ hit, popularItem, onClose }: DetailModalProps) {
+  const navigate = useNavigate()
   const openPlayer = usePlayerStore((s) => s.openPlayer)
   const queryClient = useQueryClient()
   const [resolvedDocId, setResolvedDocId] = useState<string | null>(null)
@@ -126,10 +128,19 @@ export default function DetailModal({ hit, popularItem, onClose }: DetailModalPr
       await addToLibrary(mappedType, match.id)
       setResolvedDocId(match.id)
       queryClient.invalidateQueries({ queryKey: ['library'] })
+      return match.id
     },
     onMutate: () => {
       setResolving(true)
       setResolveError(null)
+    },
+    onSuccess: (docId) => {
+      if (!docId || !popularItem) return
+      const path =
+        popularItem.type === 'movie'
+          ? `/library/movies/${docId}`
+          : `/library/tv-shows/${docId}`
+      navigate(path)
     },
     onSettled: () => {
       setResolving(false)
@@ -184,7 +195,18 @@ export default function DetailModal({ hit, popularItem, onClose }: DetailModalPr
     if (isInLib) {
       removeFromLib.mutate({ type: t, id: cHit.id })
     } else {
-      addToLib.mutate({ type: t, id: cHit.id })
+      addToLib.mutate(
+        { type: t, id: cHit.id },
+        {
+          onSuccess: () => {
+            if (cHit.type === 'movie') {
+              navigate(`/library/movies/${cHit.id}`)
+            } else if (cHit.type === 'series') {
+              navigate(`/library/tv-shows/${cHit.id}`)
+            }
+          },
+        }
+      )
     }
   }
 
